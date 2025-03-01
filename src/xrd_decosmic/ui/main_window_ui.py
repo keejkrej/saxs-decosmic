@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'src/xrd_decosmic/ui/main_window.ui'
+# Form implementation generated from reading ui file '.\src\xrd_decosmic\ui\main_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #
@@ -98,20 +98,23 @@ class Ui_MainWindow(object):
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
         self.menuBar = QtWidgets.QMenuBar(MainWindow)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 800, 34))
+        self.menuBar.setGeometry(QtCore.QRect(0, 0, 800, 25))
         self.menuBar.setObjectName("menuBar")
         self.menuFile = QtWidgets.QMenu(self.menuBar)
         self.menuFile.setObjectName("menuFile")
         MainWindow.setMenuBar(self.menuBar)
-        self.actionLoadFirstData = QtWidgets.QAction(MainWindow)
-        self.actionLoadFirstData.setObjectName("actionLoadFirstData")
-        self.actionSaveDataAndPlot = QtWidgets.QAction(MainWindow)
-        self.actionSaveDataAndPlot.setObjectName("actionSaveDataAndPlot")
+        self.actionLoadData = QtWidgets.QAction(MainWindow)
+        self.actionLoadData.setObjectName("actionLoadData")
+        self.actionSaveData = QtWidgets.QAction(MainWindow)
+        self.actionSaveData.setObjectName("actionSaveData")
         self.actionLoadParameters = QtWidgets.QAction(MainWindow)
         self.actionLoadParameters.setObjectName("actionLoadParameters")
-        self.menuFile.addAction(self.actionLoadFirstData)
+        self.actionSaveParameters = QtWidgets.QAction(MainWindow)
+        self.actionSaveParameters.setObjectName("actionSaveParameters")
+        self.menuFile.addAction(self.actionLoadData)
         self.menuFile.addAction(self.actionLoadParameters)
-        self.menuFile.addAction(self.actionSaveDataAndPlot)
+        self.menuFile.addAction(self.actionSaveData)
+        self.menuFile.addAction(self.actionSaveParameters)
         self.menuBar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
@@ -127,6 +130,7 @@ class Ui_MainWindow(object):
         self.startButton.setText(_translate("MainWindow", "Start"))
         self.plotButton.setText(_translate("MainWindow", "Plot"))
         self.menuFile.setTitle(_translate("MainWindow", "File"))
-        self.actionLoadFirstData.setText(_translate("MainWindow", "Load Data"))
-        self.actionSaveDataAndPlot.setText(_translate("MainWindow", "Save Data"))
+        self.actionLoadData.setText(_translate("MainWindow", "Load Data"))
+        self.actionSaveData.setText(_translate("MainWindow", "Save Data"))
         self.actionLoadParameters.setText(_translate("MainWindow", "Load Parameters"))
+        self.actionSaveParameters.setText(_translate("MainWindow", "Save Parameters"))

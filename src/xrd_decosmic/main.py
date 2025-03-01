@@ -22,7 +22,7 @@ class PlotCanvas(FigureCanvas):
 
     def plot(self, img: np.ndarray):
         self.ax.clear()
-        self.ax.imshow(img, cmap='hot', vmin=0, vmax=0.02)
+        self.ax.imshow(img, cmap='hot')
         self.draw()
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -50,7 +50,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setWindowTitle("XRD Decosmic")
         self.setFixedSize(1000, 600)
         self.logText.setReadOnly(True)
-        self.comboBox.addItems(['Avg', 'CleanAvg', 'Diff', 'SubDonut', 'SubStrike'])
+        self.comboBox.addItems(['Avg', 'CleanAvg', 'Diff', 'SubDonut', 'SubStrike', 'Mask'])
 
     def setupPlot(self):
         plotLayout = QVBoxLayout()
@@ -61,9 +61,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.plotArea.setLayout(plotLayout)
 
     def setupController(self):
-        self.actionLoadFirstData.triggered.connect(self.loadFirstData)
+        self.actionLoadData.triggered.connect(self.loadData)
         self.actionLoadParameters.triggered.connect(self.loadParams)
-        self.actionSaveDataAndPlot.triggered.connect(self.saveDataAndPlot)
+        self.actionSaveData.triggered.connect(self.saveData)
+        self.actionSaveParameters.triggered.connect(self.saveParams)
         for name, edit in self.paramsEdit.items():
             edit.textChanged.connect(lambda text, name=name: self.onParamsEditChanged(name, text))
             getattr(self.paramsModel, f"{name}Changed").connect(lambda text, name=name: self.onParamsDataChanged(name, text))
@@ -74,7 +75,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.logText.appendPlainText(text)
         QApplication.processEvents()
 
-    def loadFirstData(self):
+    def loadData(self):
         fileName, _ = QFileDialog.getOpenFileName(self, 'Open first file in image series', './', '*.tif')
         self.logPrintLn(f"Loading {os.path.basename(fileName)} ...")
         try:
@@ -96,6 +97,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.logPrintLn(f"Loading successful!")
         except Exception as e:
             self.logPrintLn(f"Loading failed!")
+            print(e)
+
+    def saveParams(self):
+        fileName, _ = QFileDialog.getSaveFileName(self, 'Save parameter file', './', '*.json')
+        self.logPrintLn(f"Saving {os.path.basename(fileName)} ...")
+        try:
+            self.paramsJson = {name: getattr(self.paramsModel, name) for name in self.paramsEdit.keys()}
+            with open(fileName, 'w') as f:
+                json.dump(self.paramsJson, f, indent=4)
+            self.logPrintLn(f"Saving successful!")
+        except Exception as e:
+            self.logPrintLn(f"Saving failed!")
             print(e)
 
     def startCleaning(self):
@@ -122,13 +135,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 img = self.dataModel.subDonutAvg
             elif plotType == 'SubStrike':
                 img = self.dataModel.subStrikeAvg
+            elif plotType == 'Mask':
+                img = self.dataModel.combinedMask
             self.plotCanvas.plot(img)
             self.logPrintLn("Plotting successful!")
         except Exception as e:
             self.logPrintLn("Plotting failed!")
             print(e)
 
-    def saveDataAndPlot(self):
+    def saveData(self):
         folderName = QFileDialog.getExistingDirectory(self, 'Save data and plot to the folder', './')
         self.logPrintLn(f"Saving data and plot to {os.path.basename(folderName)} ...")
         try:
