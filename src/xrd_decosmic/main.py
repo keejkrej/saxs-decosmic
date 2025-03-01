@@ -74,17 +74,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.logText.appendPlainText(text)
         QApplication.processEvents()
 
-    def logPrint(self, text):
-        self.logText.insertPlainText(text)
-        QApplication.processEvents()
-
     def loadFirstData(self):
         fileName, _ = QFileDialog.getOpenFileName(self, 'Open first file in image series', './', '*.tif')
         self.logPrintLn(f"Loading {os.path.basename(fileName)} ...")
         try:
             self.dataModel = DataModel(fileName)
             self.dataModel.actionSignal.connect(self.logPrintLn)
-            self.dataModel.progressSignal.connect(self.logPrint)
+            self.dataModel.progressSignal.connect(self.logPrintLn)
             self.logPrintLn(f"Loading successful!")
         except Exception as e:
             self.logPrintLn(f"Loading failed!")

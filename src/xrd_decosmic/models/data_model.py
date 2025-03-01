@@ -55,18 +55,17 @@ class DataModel(QObject):
     def avgImg(self) -> np.ndarray:
         imgSum = np.zeros(self.imgShape, dtype=np.float64)
         imgBinarySum = np.zeros(self.imgShape, dtype=np.float64)
-        self.actionSignal.emit('Averaging images')
+        self.actionSignal.emit('Averaging images ...')
         avgProgress = ProgressModel(self.imgNum, 10)
         avgProgress.progressSignal.connect(self.progressSignal.emit)
 
-        self.progressSignal.emit('\n')
         for i in range(self.imgNum):
             img = self.getImg(i)
             imgSum += img
             imgBinary = img > 0
             imgBinarySum += imgBinary
             avgProgress.update(i)
-        self.progressSignal.emit('100')
+        self.progressSignal.emit('100%')
         
         self.imgAvg = imgSum / self.imgNum
         self.imgBinaryAvg = imgBinarySum / self.imgNum
@@ -82,11 +81,10 @@ class DataModel(QObject):
         imgCleanNum = np.ones(self.imgShape, dtype=np.int32) * self.imgNum
         subDonutSum = np.zeros(self.imgShape, dtype=np.float64)
         subStrikeSum = np.zeros(self.imgShape, dtype=np.float64)
-        self.actionSignal.emit('Cleaning images')
+        self.actionSignal.emit('Cleaning images ...')
         cleanProgress = ProgressModel(self.imgNum, 10)
         cleanProgress.progressSignal.connect(self.progressSignal.emit)
 
-        self.progressSignal.emit('\n')
         for i in range(self.imgNum):
             img = self.getImg(i)
             imgModel = ImageModel(img, self.combinedMask)
@@ -97,7 +95,7 @@ class DataModel(QObject):
             subStrikeSum += imgModel.subStrike
             imgCleanNum -= imgModel.modMask
             cleanProgress.update(i)
-        self.progressSignal.emit('100')
+        self.progressSignal.emit('100%')
         
         self.imgCleanAvg = imgCleanSum / imgCleanNum
         self.subDonutAvg = subDonutSum / self.imgNum

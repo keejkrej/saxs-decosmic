@@ -12,5 +12,5 @@ class ProgressModel(QObject):
     def update(self, idx):
         pct = idx / self.max * 100
         if pct > self.accumulator:
-            self.progressSignal.emit(f"{self.accumulator:02d} ")
+            self.progressSignal.emit(f"{self.accumulator:02d}%")
             self.accumulator += self.step
