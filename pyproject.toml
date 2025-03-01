@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xrd_decosmic"
+version = "1.0.0"
+description = "XRD Decosmic"
+dependencies = [
+    "pyFAI[all]"
+]
+
+[tool.setuptools]
+packages = ["xrd_decosmic"]
+
+[tool.setuptools.package-dir]
+"xrd_decosmic" = "src/xrd_decosmic"
