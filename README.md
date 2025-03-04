@@ -20,3 +20,13 @@ Select folder to save
 ```
 notebook/example.ipynb
 ```
+change file name accordingly, just specify the first image in series
+windows:
+```
+fileName = "P:/user/Your-Name/Your-Project/Your-Image.tif"
+```
+
+jupyter hub:
+```
+fileName = "/project/ag-nickel/user/Your-Name/Your-Project/Your-Image.tif"
+```
