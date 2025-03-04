@@ -1,5 +1,6 @@
 # Installation
 ```
+cd xrd_decosmic
 pip install -e .
 ```
 # Usage
@@ -15,3 +16,7 @@ Select first image in the series
 - File - Save Data - 
 Select folder to save
 - File - Save Parameters (Optional)
+# Notebook
+```
+notebook/example.ipynb
+```
