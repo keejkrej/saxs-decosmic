@@ -22,7 +22,9 @@ class DataModel(QObject):
     def __init__(self, firstFilename: str, userMask: np.ndarray[bool]=True):
         super().__init__()
         self.firstFilename = firstFilename
+        print(f"Loading {firstFilename} ...")
         self.imgSeries = fabio.open_series(first_filename=self.firstFilename)
+        print(f"Loaded {self.imgSeries.nframes} images")
         self.imgNum = self.imgSeries.nframes
         self.imgShape = self.imgSeries.get_frame(0).data.shape
         self.imgDType = self.imgSeries.get_frame(0).data.dtype
