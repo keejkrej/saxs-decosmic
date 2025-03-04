@@ -48,7 +48,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def setupExtra(self):
         self.setWindowTitle("XRD Decosmic")
-        self.setFixedSize(1000, 600)
+        # self.setFixedSize(1000, 600)
         self.logText.setReadOnly(True)
         self.comboBox.addItems(['Avg', 'CleanAvg', 'Diff', 'SubDonut', 'SubStrike', 'Mask'])
 
