@@ -1,6 +1,6 @@
 import fabio
 import numpy as np
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal
 from .params_model import ParamsModel
 from .image_model import ImageModel
 from .progress_model import ProgressModel
@@ -56,6 +56,7 @@ class DataModel(QObject):
         imgSum = np.zeros(self.imgShape, dtype=np.float64)
         imgBinarySum = np.zeros(self.imgShape, dtype=np.float64)
         self.actionSignal.emit('Averaging images ...')
+        print('Averaging images ...')
         avgProgress = ProgressModel(self.imgNum, 10)
         avgProgress.progressSignal.connect(self.progressSignal.emit)
 
@@ -66,6 +67,7 @@ class DataModel(QObject):
             imgBinarySum += imgBinary
             avgProgress.update(i)
         self.progressSignal.emit('100%')
+        print('100%')
         
         self.imgAvg = imgSum / self.imgNum
         self.imgBinaryAvg = imgBinarySum / self.imgNum
@@ -82,6 +84,7 @@ class DataModel(QObject):
         subDonutSum = np.zeros(self.imgShape, dtype=np.float64)
         subStrikeSum = np.zeros(self.imgShape, dtype=np.float64)
         self.actionSignal.emit('Cleaning images ...')
+        print('Cleaning images ...')
         cleanProgress = ProgressModel(self.imgNum, 10)
         cleanProgress.progressSignal.connect(self.progressSignal.emit)
 
@@ -96,6 +99,7 @@ class DataModel(QObject):
             imgCleanNum -= imgModel.modMask
             cleanProgress.update(i)
         self.progressSignal.emit('100%')
+        print('100%')
         
         self.imgCleanAvg = imgCleanSum / imgCleanNum
         self.subDonutAvg = subDonutSum / self.imgNum
