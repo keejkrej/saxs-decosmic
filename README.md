@@ -1,11 +1,11 @@
 # Installation
 ```
-cd xrd_decosmic
+cd xrd-decosmic
 pip install -e .
 ```
 # Usage
 ```
-python -m xrd_decosmic.main
+python -m decosmic.main
 ```
 - File - Load Data - 
 Select first image in the series
