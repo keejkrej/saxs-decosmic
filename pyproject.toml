@@ -1,17 +1,17 @@
-[build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "xrd_decosmic"
+name = "xrd-decosmic"
 version = "1.0.0"
-description = "XRD Decosmic"
-dependencies = [
-    "pyFAI[all]"
+description = "Cosmic background removal from XRD 2d image"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["pyFAI[all]"]
+authors = [
+    { name = "Tianyi Cao" }
 ]
 
 [tool.setuptools]
-packages = ["xrd_decosmic"]
+packages = ["decosmic"]
 
-[tool.setuptools.package-dir]
-"xrd_decosmic" = "src/xrd_decosmic"
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
