@@ -11,15 +11,17 @@ class ImageModel:
         self.subDonut = None
         self.subStrike = None
 
-    def loadParams(self, thDonut: int, thStrike: int, winStrike: int) -> None:
+    def loadParams(self, thDonut: int, thStrike: int, winStrike: int, expDonut: int, expStrike: int) -> None:
         self.thDonut = thDonut
         self.thStrike = thStrike
-        self.winStrike = winStrike        
+        self.winStrike = winStrike
+        self.expDonut = expDonut
+        self.expStrike = expStrike
 
     def deDonut(self, img: np.ndarray[np.int32], mask: np.ndarray[bool]) -> tuple[np.ndarray[np.int32], np.ndarray[bool]]:
         imgCopy = img.copy()
         donutMask = imgCopy > self.thDonut
-        donutMaskExpanded = maximum_filter(donutMask, size=3)
+        donutMaskExpanded = maximum_filter(donutMask, size=self.expDonut)
         modMask = donutMaskExpanded & mask
         imgCopy[modMask] = 0
         return imgCopy, modMask
@@ -32,16 +34,16 @@ class ImageModel:
         imgConv = convolve(imgBinary, convKernel, mode='constant', cval=0)
         imgConv = imgConv * imgBinary
         strikeMask = imgConv > self.thStrike
-        strikeMaskExpanded = maximum_filter(strikeMask, size=3)
+        strikeMaskExpanded = maximum_filter(strikeMask, size=self.expStrike)
         modMask = strikeMaskExpanded & mask
         imgCopy[modMask] = 0
         return imgCopy, modMask
     
     def cleanImg(self) -> None:
         imgCopy = np.copy(self.img)
-        imgDonut, maskDonut = self.deDonut(imgCopy, self.mask)
-        imgStrike, maskStrike = self.deStrike(imgDonut, self.mask)
-        self.imgClean = np.copy(imgStrike)
-        self.modMask = maskDonut | maskStrike
-        self.subDonut = imgCopy - imgDonut
-        self.subStrike = imgDonut - imgStrike
+        self.imgDonut, self.maskDonut = self.deDonut(imgCopy, self.mask)
+        self.imgStrike, self.maskStrike = self.deStrike(self.imgDonut, self.mask)
+        self.imgClean = np.copy(self.imgStrike)
+        self.modMask = self.maskDonut | self.maskStrike
+        self.subDonut = imgCopy - self.imgDonut
+        self.subStrike = self.imgDonut - self.imgStrike

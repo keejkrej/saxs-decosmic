@@ -47,6 +47,8 @@ class DataModel(QObject):
         self.thMask = thMask
         self.thStrike = thStrike
         self.winStrike = winStrike
+        self.expDonut = 9
+        self.expStrike = 3
 
     def getImg(self, idx: int) -> np.ndarray:
         img = self.imgSeries.get_frame(idx).data.astype(np.int32)
@@ -93,7 +95,7 @@ class DataModel(QObject):
         for i in range(self.imgNum):
             img = self.getImg(i)
             imgModel = ImageModel(img, self.combinedMask)
-            imgModel.loadParams(self.thDonut, self.thStrike, self.winStrike)
+            imgModel.loadParams(self.thDonut, self.thStrike, self.winStrike, self.expDonut, self.expStrike)
             imgModel.cleanImg()
             imgCleanSum += imgModel.imgClean
             subDonutSum += imgModel.subDonut
