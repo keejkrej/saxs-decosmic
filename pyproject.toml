@@ -4,14 +4,42 @@ version = "1.0.0"
 description = "Cosmic background removal from XRD 2d image"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = ["pyFAI[all]"]
+dependencies = [
+    "pyFAI[all]",
+    "numpy",
+    "matplotlib",
+    "scipy",
+    "PyQt5"
+]
 authors = [
     { name = "Tianyi Cao" }
 ]
 
-[tool.setuptools]
-packages = ["decosmic"]
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov"
+]
+dev = [
+    "black",
+    "isort",
+    "flake8",
+    "mypy"
+]
+
+[project.scripts]
+xrd-decosmic = "decosmic.main:main"
+xrd-decosmic-gui = "decosmic.gui.main:main"
+xrd-decosmic-cli = "decosmic.cli.main:main"
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["decosmic"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
