@@ -6,8 +6,7 @@ import json
 from typing import Optional, Dict
 import numpy as np
 from PySide6.QtCore import QObject, Signal
-from ...core.processing_params import ProcessingParams
-from ...core.series_processor import SeriesProcessor
+from ...core import ProcessingParams, SeriesProcessor
 
 class ProcessingModel(QObject):
     """Model responsible for processing images and managing data state."""

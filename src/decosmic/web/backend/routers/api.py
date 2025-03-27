@@ -10,7 +10,7 @@ from ..models.schemas import (
 )
 from ..services.processor_service import ProcessorService
 from ..services.filesystem_service import FileSystemService
-from ....core.processing_params import ProcessingParams
+from ....core import ProcessingParams
 
 router = APIRouter()
 

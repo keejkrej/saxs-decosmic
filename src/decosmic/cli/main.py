@@ -5,8 +5,7 @@ import argparse
 import json
 import sys
 
-from ..core.processing_params import ProcessingParams
-from ..core.series_processor import SeriesProcessor
+from ..core import ProcessingParams, SeriesProcessor
 
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser with parameter descriptions."""

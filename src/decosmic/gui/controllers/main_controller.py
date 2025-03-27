@@ -6,7 +6,7 @@ from PySide6.QtCore import QObject, Slot
 
 from ..models.processing_model import ProcessingModel
 from ..views.main_view import MainView
-from ...core.processing_params import ProcessingParams
+from ...core import ProcessingParams
 
 class MainController(QObject):
     """Controller that connects the model and view components."""
