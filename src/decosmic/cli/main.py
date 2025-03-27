@@ -4,6 +4,7 @@ Main entry point for the CLI application.
 import argparse
 import json
 import sys
+import fabio
 
 from ..core import ProcessingParams, SeriesProcessor
 
@@ -13,6 +14,8 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument('input_file', help='First image in the series')
     parser.add_argument('--output-dir', required=True, help='Directory to save results')
     parser.add_argument('--params-file', help='JSON file containing processing parameters')
+    parser.add_argument('--user-mask', help='User-defined mask for modifiable pixels')
+    parser.add_argument('--use-fabio', action='store_true', help='Use fabio to load image series')
     
     # Add parameter arguments without defaults - they'll use ProcessingParams defaults if not specified
     parser.add_argument('--th-donut', help='Threshold for donut detection')
@@ -75,9 +78,15 @@ def main():
     try:
         # Get parameters with validation
         params_model = get_params(args)
+
+        if args.user_mask:
+            user_mask = fabio.open(args.user_mask).data
+            user_mask = user_mask.astype(bool)
+        else:
+            user_mask = None
         
         # Process images
-        processor = SeriesProcessor(args.input_file)
+        processor = SeriesProcessor(args.input_file, user_mask=user_mask, use_fabio=args.use_fabio)
         processor.load_params(params_model)
         processor.avg_clean_img(lambda p: print(f'Progress: {p}%'))
         

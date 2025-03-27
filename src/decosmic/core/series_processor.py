@@ -5,21 +5,26 @@ import os
 import fabio
 import numpy as np
 from typing import Callable, Optional
+from pathlib import Path
 
 from .processing_params import ProcessingParams
 from .image_processor import ImageProcessor
+from .image_series import ImageSeries
 
 class SeriesProcessor:
     """Processes a series of XRD images to remove cosmic ray artifacts."""
     
-    def __init__(self, first_filename: str, user_mask: np.ndarray[bool] = True):
+    def __init__(self, first_filename: str, user_mask: np.ndarray[bool] = True, use_fabio: bool = False):
+        """
+        Initialize the processor.
+        
+        Args:
+            first_filename: Path to the first image or directory containing images
+            user_mask: User-defined mask for valid pixels
+            use_fabio: Whether to use fabio.open_series instead of manual loading
+        """
         self.first_filename = first_filename
-        print(f"Loading {first_filename} ...")
-        self.img_series = fabio.open_series(first_filename=self.first_filename)
-        print(f"Loaded {self.img_series.nframes} images")
-        self.img_num = self.img_series.nframes
-        self.img_shape = self.img_series.get_frame(0).data.shape
-        self.img_dtype = self.img_series.get_frame(0).data.dtype
+        self.load_images(first_filename, use_fabio)
         self.user_mask = user_mask
         
         # Processing parameters
@@ -40,6 +45,27 @@ class SeriesProcessor:
         self.sub_streak_avg: Optional[np.ndarray] = None
         self.img_diff_avg: Optional[np.ndarray] = None
 
+    def load_images(self, first_filename: str, use_fabio: bool = False) -> None:
+        """
+        Load images from a file.
+        
+        Args:
+            first_filename: Path to the first image or directory containing images
+            use_fabio: Whether to use fabio.open_series instead of manual loading
+        """
+        print(f"Loading {first_filename} ...")
+        
+        # Create image series using the new ImageSeries class
+        self.img_series = ImageSeries(first_filename, use_fabio)
+            
+        print(f"Loaded {self.img_series.nframes} images")
+        self.img_num = self.img_series.nframes
+        
+        # Get shape and dtype from first frame
+        first_frame = self.img_series.get_frame(0)
+        self.img_shape = first_frame.shape
+        self.img_dtype = first_frame.dtype
+
     def load_params(self, params: ProcessingParams) -> None:
         """Load parameters from a ProcessingParams instance."""
         # Parameters are already validated by ProcessingParams
@@ -52,7 +78,8 @@ class SeriesProcessor:
 
     def get_img(self, idx: int) -> np.ndarray:
         """Get a single image from the series."""
-        img = self.img_series.get_frame(idx).data.astype(np.int32)
+        img = self.img_series.get_frame(idx)
+        img = img.astype(np.int32)
         img = np.nan_to_num(img, nan=-1)
         img = np.clip(img, 0, None)
         return img
@@ -86,6 +113,22 @@ class SeriesProcessor:
         """Create mask for ring artifacts."""
         self.ring_mask = self.img_binary_avg < self.th_mask
         self.combined_mask = self.ring_mask & self.user_mask
+
+    def single_clean_img(self, idx: int, progress_callback: Optional[Callable[[int], None]] = None) -> ImageProcessor:
+        """Clean a single image."""
+        if self.img_avg is None:
+            self.avg_img(progress_callback)
+        if self.combined_mask is None:
+            self.mask_img()
+
+        print(f"Cleaning image {idx} ...")
+        img = self.get_img(idx)
+        processor = ImageProcessor(img, self.combined_mask)
+        processor.load_params(
+            self.th_donut, self.th_streak, self.win_streak,
+            self.exp_donut, self.exp_streak)
+        processor.clean_img()
+        return processor
 
     def avg_clean_img(self, progress_callback: Optional[Callable[[int], None]] = None) -> None:
         """Process all images to remove cosmic ray artifacts."""
@@ -128,23 +171,60 @@ class SeriesProcessor:
         self.sub_streak_avg = sub_streak_sum / self.img_num
         self.img_diff_avg = self.img_avg - self.img_clean_avg
 
+    def save_single_result(self, idx: int, output_dir: str) -> None:
+        """Save single result."""
+        os.makedirs(output_dir, exist_ok=True)
+        processor = self.single_clean_img(idx, lambda p: print(f'Progress: {p}%'))
+
+        # Save raw image
+        fabio.tifimage.tifimage(data=processor.img).write(
+            os.path.join(output_dir, f'{idx:04d}.tif')
+        )
+
+        # Save intermediate image
+        fabio.tifimage.tifimage(data=processor.img_intermediate).write(
+            os.path.join(output_dir, f'{idx:04d}_intermediate.tif')
+        )
+
+        # Save cleaned image
+        fabio.tifimage.tifimage(data=processor.img_clean).write(
+            os.path.join(output_dir, f'{idx:04d}_clean.tif')
+        )
+
+        # Save mask
+        fabio.tifimage.tifimage(data=processor.mod_mask.astype(np.int32)).write(
+            os.path.join(output_dir, f'{idx:04d}_mod_mask.tif')
+        )
+
+        # Save subtracted components
+        fabio.tifimage.tifimage(data=processor.sub_donut).write(
+            os.path.join(output_dir, f'{idx:04d}_donut.tif')
+        )
+        fabio.tifimage.tifimage(data=processor.sub_streak).write(
+            os.path.join(output_dir, f'{idx:04d}_streak.tif')
+        )
+
     def save_results(self, output_dir: str) -> None:
         """Save processing results as TIFF files."""
         os.makedirs(output_dir, exist_ok=True)
         
-        # Save average images
+        # Save direct averaged images
         fabio.tifimage.tifimage(data=self.img_avg).write(
             os.path.join(output_dir, 'avg.tif')
         )
+
+        # Save cleaned averaged images
         fabio.tifimage.tifimage(data=self.img_clean_avg).write(
             os.path.join(output_dir, 'clean.tif')
         )
+
+        # Save difference between averaged images
         fabio.tifimage.tifimage(data=self.img_diff_avg).write(
             os.path.join(output_dir, 'diff.tif')
         )
         
         # Save masks
-        fabio.tifimage.tifimage(data=self.ring_mask.astype(np.int32)).write(
+        fabio.tifimage.tifimage(data=self.combined_mask.astype(np.int32)).write(
             os.path.join(output_dir, 'mask.tif')
         )
         
