@@ -20,8 +20,8 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--th-mask', help='Threshold for mask creation (0-1)')
     parser.add_argument('--th-streak', help='Threshold for streak detection')
     parser.add_argument('--win-streak', help='Window size for streak detection')
-    parser.add_argument('--exp-donut', help='Exponent for donut detection')
-    parser.add_argument('--exp-streak', help='Exponent for streak detection')
+    parser.add_argument('--exp-donut', help='Expansion of donut mask')
+    parser.add_argument('--exp-streak', help='Expansion of streak mask')
     
     return parser
 
@@ -80,7 +80,7 @@ def main():
         # Process images
         processor = SeriesProcessor(args.input_file)
         processor.load_params(params_model)
-        processor.avg_clean_img(lambda i: print(f'Progress: {int(i/processor.img_num*100)}%'))
+        processor.avg_clean_img(lambda p: print(f'Progress: {p}%'))
         
         # Save results
         processor.save_results(args.output_dir)

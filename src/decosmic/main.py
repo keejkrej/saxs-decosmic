@@ -17,11 +17,11 @@ def main():
     print("\nOptions:")
     print("  --params-file FILE    Load parameters from JSON file")
     print("  --th-donut VALUE      Threshold for donut detection (default: 15)")
-    print("  --th-mask VALUE       Threshold for ring mask creation (default: 0.1)")
+    print("  --th-mask VALUE       Threshold for ring mask creation (default: 0.05)")
     print("  --th-streak VALUE     Threshold for streak detection (default: 3)")
     print("  --win-streak VALUE    Window size for streak detection (default: 3)")
-    print("  --exp-donut VALUE     Exponent for donut detection (default: 9)")
-    print("  --exp-streak VALUE    Exponent for streak detection (default: 3)")
+    print("  --exp-donut VALUE     Expansion of donut mask (default: 9)")
+    print("  --exp-streak VALUE    Expansion of streak mask (default: 3)")
     print("\nFor more information, see the README or documentation.")
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ class ImageProcessor:
         
         Args:
             img: Input image data
-            mask: Mask for valid pixels
+            mask: Mask for valid pixels, where True means can be modified
         """
         self.img = img
         self.mask = mask
@@ -34,7 +34,7 @@ class ImageProcessor:
         self.sub_streak: Optional[np.ndarray] = None
 
     def load_params(self, th_donut: int, th_streak: int, win_streak: int,
-                   exp_donut: int = 9, exp_streak: int = 3) -> None:
+                   exp_donut: int, exp_streak: int) -> None:
         """
         Load processing parameters.
         
@@ -42,8 +42,8 @@ class ImageProcessor:
             th_donut: Threshold for donut detection
             th_streak: Threshold for streak detection
             win_streak: Window size for streak detection
-            exp_donut: Exponent for donut detection
-            exp_streak: Exponent for streak detection
+            exp_donut: Expansion of donut mask
+            exp_streak: Expansion of streak mask
         """
         self.th_donut = th_donut
         self.th_streak = th_streak

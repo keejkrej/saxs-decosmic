@@ -4,7 +4,7 @@ Processor for handling series of XRD images.
 import os
 import fabio
 import numpy as np
-from typing import Callable, Optional, Tuple, Dict, List
+from typing import Callable, Optional
 
 from .processing_params import ProcessingParams
 from .image_processor import ImageProcessor
@@ -63,13 +63,21 @@ class SeriesProcessor:
         img_binary_sum = np.zeros(self.img_shape, dtype=np.float64)
         print('Averaging images ...')
         
+        last_progress = -1
         for i in range(self.img_num):
             img = self.get_img(i)
             img_sum += img
             img_binary = img > 0
             img_binary_sum += img_binary
             if progress_callback:
-                progress_callback(i)
+                current_progress = (i * 100) // self.img_num
+                if current_progress // 10 > last_progress // 10:
+                    progress_callback(current_progress)
+                    last_progress = current_progress
+        
+        # Show 100% at the end
+        if progress_callback:
+            progress_callback(100)
         
         self.img_avg = img_sum / self.img_num
         self.img_binary_avg = img_binary_sum / self.img_num
@@ -90,6 +98,7 @@ class SeriesProcessor:
         sub_streak_sum = np.zeros(self.img_shape, dtype=np.float64)
         
         print('Cleaning images ...')
+        last_progress = -1
         for i in range(self.img_num):
             img = self.get_img(i)
             processor = ImageProcessor(img, self.combined_mask)
@@ -105,7 +114,14 @@ class SeriesProcessor:
             img_clean_num -= processor.mod_mask
             
             if progress_callback:
-                progress_callback(i)
+                current_progress = (i * 100) // self.img_num
+                if current_progress // 10 > last_progress // 10:
+                    progress_callback(current_progress)
+                    last_progress = current_progress
+        
+        # Show 100% at the end
+        if progress_callback:
+            progress_callback(100)
         
         self.img_clean_avg = img_clean_sum / img_clean_num
         self.sub_donut_avg = sub_donut_sum / self.img_num
