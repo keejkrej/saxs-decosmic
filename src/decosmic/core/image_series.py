@@ -4,7 +4,6 @@ Module for handling image series loading and management.
 import fabio
 from pathlib import Path
 from abc import ABC, abstractmethod
-from typing import List
 import os
 import numpy as np
 
@@ -28,6 +27,11 @@ class ImageSeriesStrategy(ABC):
     @abstractmethod
     def nframes(self) -> int:
         """Get the number of frames in the series."""
+        pass
+
+    @abstractmethod
+    def cleanup(self) -> None:
+        """Clean up any resources held by the strategy."""
         pass
 
 class ManualImageSeriesStrategy(ImageSeriesStrategy):
@@ -71,10 +75,14 @@ class ManualImageSeriesStrategy(ImageSeriesStrategy):
             raise IndexError(f"Frame index {index} out of range [0, {self.nframes})")
         
         frame = fabio.open(str(self.files[index]))
-        try:
-            return frame.data
-        finally:
-            frame.close()
+        data = frame.data.copy()  # Make a copy since frame will be closed
+        frame.close()
+        return data
+
+    def cleanup(self) -> None:
+        """Clean up any resources held by the strategy."""
+        # No cleanup needed for manual strategy
+        pass
 
 class FabioImageSeriesStrategy(ImageSeriesStrategy):
     """Strategy for loading images using fabio.open_series."""
@@ -104,10 +112,12 @@ class FabioImageSeriesStrategy(ImageSeriesStrategy):
             numpy.ndarray: The frame data
         """
         frame = self.img_series.get_frame(index)
-        try:
-            return frame.data
-        finally:
-            frame.close()
+        return frame.data
+
+    def cleanup(self) -> None:
+        """Clean up any resources held by the strategy."""
+        if hasattr(self, 'img_series'):
+            self.img_series.close()
 
 class ImageSeries:
     """Main class for image series management."""
@@ -147,4 +157,9 @@ class ImageSeries:
         Returns:
             numpy.ndarray: The frame data
         """
-        return self._strategy.get_frame(index)    
+        return self._strategy.get_frame(index)
+
+    def cleanup(self) -> None:
+        """Clean up any resources held by the image series."""
+        if hasattr(self, '_strategy'):
+            self._strategy.cleanup()    

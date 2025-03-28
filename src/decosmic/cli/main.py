@@ -94,6 +94,9 @@ def main():
         processor.save_results(args.output_dir)
         print(f'Results saved to {args.output_dir}')
         
+        # Free up memory
+        del processor
+        
     except Exception as e:
         print(f'Error: {str(e)}', file=sys.stderr)
         sys.exit(1)

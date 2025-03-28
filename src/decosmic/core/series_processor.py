@@ -45,6 +45,11 @@ class SeriesProcessor:
         self.sub_streak_avg: Optional[np.ndarray] = None
         self.img_diff_avg: Optional[np.ndarray] = None
 
+    def __del__(self):
+        """Clean up resources when the processor is deleted."""
+        if hasattr(self, 'img_series'):
+            self.img_series.cleanup()
+
     def load_images(self, first_filename: str, use_fabio: bool = False) -> None:
         """
         Load images from a file.
