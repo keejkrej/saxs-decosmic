@@ -2,15 +2,15 @@ from fastapi import APIRouter, UploadFile, Depends
 from pathlib import Path
 import numpy as np
 
-from ..models.schemas import (
+from decosmic.web.backend.models.schemas import (
     ProcessingResponse,
     PathRequest,
     DirectoryContents,
     PlotResponse
 )
-from ..services.processor_service import ProcessorService
-from ..services.filesystem_service import FileSystemService
-from ....core import ProcessingParams
+from decosmic.web.backend.services.processor_service import ProcessorService
+from decosmic.web.backend.services.filesystem_service import FileSystemService
+from decosmic.core import ProcessingParams
 
 router = APIRouter()
 

@@ -6,7 +6,7 @@ import json
 import sys
 import fabio
 
-from ..core import ProcessingParams, SeriesProcessor
+from decosmic.core import ProcessingParams, SeriesProcessor
 
 def create_parser() -> argparse.ArgumentParser:
     """Create the argument parser with parameter descriptions."""

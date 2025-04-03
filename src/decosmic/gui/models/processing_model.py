@@ -6,7 +6,7 @@ import json
 from typing import Optional, Dict
 import numpy as np
 from PySide6.QtCore import QObject, Signal
-from ...core import ProcessingParams, SeriesProcessor
+from decosmic.core import ProcessingParams, SeriesProcessor
 
 class ProcessingModel(QObject):
     """Model responsible for processing images and managing data state."""

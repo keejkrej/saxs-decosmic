@@ -7,9 +7,9 @@ import numpy as np
 from typing import Callable, Optional
 from pathlib import Path
 
-from .processing_params import ProcessingParams
-from .image_processor import ImageProcessor
-from .image_series import ImageSeries
+from decosmic.core.processing_params import ProcessingParams
+from decosmic.core.image_processor import ImageProcessor
+from decosmic.core.image_series import ImageSeries
 
 class SeriesProcessor:
     """Processes a series of XRD images to remove cosmic ray artifacts."""
