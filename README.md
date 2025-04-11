@@ -1,6 +1,6 @@
 # Installation
 ```
-cd xrd_decosmic
+cd xrd-decosmic
 pip install -e .
 ```
 # Usage
