@@ -8,7 +8,7 @@ from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas, 
     NavigationToolbar2QT as NavigationToolbar
 )
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QSizePolicy, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QVBoxLayout
 from PyQt5.QtCore import pyqtSlot
 from .ui.main_window_ui import Ui_MainWindow
 from .models.data_model import DataModel
