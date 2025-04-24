@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 from fastapi import HTTPException
 
-from decosmic.core import ProcessingParams, SeriesProcessor
+from ..core import ProcessingParams, SeriesProcessor
 
 class ProcessorService:
     def __init__(self):

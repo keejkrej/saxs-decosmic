@@ -5,11 +5,10 @@ import os
 import fabio
 import numpy as np
 from typing import Callable, Optional
-from pathlib import Path
 
-from decosmic.core.processing_params import ProcessingParams
-from decosmic.core.image_processor import ImageProcessor
-from decosmic.core.image_series import ImageSeries
+from .ProcessingParams import ProcessingParams
+from .ImageProcessor import ImageProcessor
+from .ImageSeries import ImageSeries
 
 class SeriesProcessor:
     """Processes a series of XRD images to remove cosmic ray artifacts."""

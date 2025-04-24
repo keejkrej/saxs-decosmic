@@ -5,9 +5,9 @@ import sys
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QCoreApplication, Qt
 
-from decosmic.gui.models.processing_model import ProcessingModel
-from decosmic.gui.views.main_view import MainView
-from decosmic.gui.controllers.main_controller import MainController
+from xrd_decosmic.gui.models.processing_model import ProcessingModel
+from xrd_decosmic.gui.views.main_view import MainView
+from xrd_decosmic.gui.controllers.main_controller import MainController
 
 def main():
     """Start the GUI application."""

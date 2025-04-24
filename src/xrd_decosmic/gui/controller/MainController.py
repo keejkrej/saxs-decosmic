@@ -1,12 +1,11 @@
 """
 Main controller for the GUI application.
 """
-from typing import Dict, Any
 from PySide6.QtCore import QObject, Slot
 
-from decosmic.gui.models.processing_model import ProcessingModel
-from decosmic.gui.views.main_view import MainView
-from decosmic.core import ProcessingParams
+from ..model.ProcessingModel import ProcessingModel
+from ..view.MainView import MainView
+from ...core import ProcessingParams
 
 class MainController(QObject):
     """Controller that connects the model and view components."""

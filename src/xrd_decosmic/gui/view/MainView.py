@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal
 
-from decosmic.gui.views.plot_view import PlotView
+from src.xrd_decosmic.gui.view.PlotView import PlotView
 from decosmic.gui.views.file_dialog import FileDialog
 
 class MainView(QMainWindow):
