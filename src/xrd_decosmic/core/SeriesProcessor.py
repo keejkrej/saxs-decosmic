@@ -285,13 +285,25 @@ class SeriesProcessor:
             if self.img_clean_avg is None:
                 raise ValueError("Cleaned average image not calculated")
             
+            img_intermediate_sum_sq = np.zeros(self.img_shape, dtype=np.float64)
             img_clean_sum_sq = np.zeros(self.img_shape, dtype=np.float64)
             
             for i in tqdm(range(self.img_num), desc='Calculating standard deviation of cleaned images'):
                 img = self._get_img(i)
-                img_clean_sum_sq += (img - self.img_clean_avg) ** 2
-                
-            self.img_std_clean = np.sqrt(img_clean_sum_sq / self.img_clean_num)
+                processor = ImageProcessor(img,
+                                           self.combined_mask,
+                                           self.th_donut,
+                                           self.th_streak,
+                                           self.win_streak,
+                                           self.exp_donut,
+                                           self.exp_streak)
+                processor.clean_img()
+
+                img_intermediate_sum_sq += (processor.img_intermediate - self.img_intermediate_avg) ** 2
+                img_clean_sum_sq += (processor.img_clean - self.img_clean_avg) ** 2
+            
+            self.img_std_intermediate = np.sqrt(np.divide(img_intermediate_sum_sq, self.img_intermediate_num, out=np.zeros_like(img_intermediate_sum_sq), where=self.img_intermediate_num != 0))
+            self.img_std_clean = np.sqrt(np.divide(img_clean_sum_sq, self.img_clean_num, out=np.zeros_like(img_clean_sum_sq), where=self.img_clean_num != 0))
             logger.debug("Standard deviation of cleaned images calculated")
         except Exception as e:
             logger.error(f"Failed to calculate standard deviation of cleaned images: {str(e)}")
@@ -410,6 +422,11 @@ class SeriesProcessor:
             # Save standard deviation of images
             fabio.tifimage.tifimage(data=self.img_std).write(
                 output_dir / 'std.tif'
+            )
+
+            # Save standard deviation of intermediate images
+            fabio.tifimage.tifimage(data=self.img_std_intermediate).write(
+                output_dir / 'std_intermediate.tif'
             )
 
             # Save standard deviation of cleaned images 
