@@ -12,8 +12,8 @@ pip install -e .
 
 ## Usage
 
-Running the main package will display usage information:
-
 ```bash
-python -m xrd_decosmic.cli
+python -m xrd_decosmic.cli \
+--input-file /path/to/first_filename.tif \
+--output /path/to/output/
 ```
