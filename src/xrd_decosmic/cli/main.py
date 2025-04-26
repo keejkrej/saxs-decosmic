@@ -1,45 +1,74 @@
 """
 Main entry point for the CLI application.
+
+This module provides the command-line interface for the XRD cosmic ray removal
+tool. It handles argument parsing, parameter loading, and orchestrates the
+processing of image series.
 """
 import argparse
 import json
 import sys
 import fabio
+from typing import Optional, Dict, Any
 
 from ..core import ProcessingParams, SeriesProcessor
 
+# =====================================================================
+# Argument Parsing
+# =====================================================================
+
 def create_parser() -> argparse.ArgumentParser:
-    """Create the argument parser with parameter descriptions."""
+    """Create the argument parser with parameter descriptions.
+    
+    This function creates and configures the argument parser with all
+    necessary command-line arguments for the application.
+    
+    Returns:
+        argparse.ArgumentParser: Configured argument parser
+    """
     parser = argparse.ArgumentParser(description='Remove cosmic background from XRD 2D images')
+    
+    # Required arguments
     parser.add_argument('input_file', help='First image in the series')
     parser.add_argument('--output-dir', required=True, help='Directory to save results')
+    
+    # Optional arguments
     parser.add_argument('--params-file', help='JSON file containing processing parameters')
     parser.add_argument('--user-mask', help='User-defined mask for modifiable pixels')
-    parser.add_argument('--use-fabio', action='store_true', help='Use fabio to load image series')
+    parser.add_argument('--use-fabio', action='store_true', 
+                       help='Use fabio to load image series (more efficient for certain formats)')
     
-    # Add parameter arguments without defaults - they'll use ProcessingParams defaults if not specified
-    parser.add_argument('--th-donut', help='Threshold for donut detection')
-    parser.add_argument('--th-mask', help='Threshold for mask creation (0-1)')
-    parser.add_argument('--th-streak', help='Threshold for streak detection')
-    parser.add_argument('--win-streak', help='Window size for streak detection')
-    parser.add_argument('--exp-donut', help='Expansion of donut mask')
-    parser.add_argument('--exp-streak', help='Expansion of streak mask')
+    # Processing parameters (optional, will use defaults if not specified)
+    parser.add_argument('--th-donut', help='Threshold for donut detection (higher = more strict)')
+    parser.add_argument('--th-mask', help='Threshold for mask creation (0-1, higher = larger masks)')
+    parser.add_argument('--th-streak', help='Threshold for streak detection (higher = more strict)')
+    parser.add_argument('--win-streak', help='Window size for streak detection (larger = longer streaks)')
+    parser.add_argument('--exp-donut', help='Expansion of donut mask (higher = larger masks)')
+    parser.add_argument('--exp-streak', help='Expansion of streak mask (higher = larger masks)')
     
     return parser
 
+# =====================================================================
+# Parameter Handling
+# =====================================================================
+
 def get_params(args: argparse.Namespace) -> ProcessingParams:
-    """
-    Get parameters from either file or command line arguments.
-    Starts with ProcessingParams defaults and modifies as needed.
+    """Get parameters from either file or command line arguments.
+    
+    This function retrieves processing parameters from either a JSON file
+    or command-line arguments. It starts with default values from
+    ProcessingParams and modifies them based on the provided arguments.
     
     Args:
         args: Parsed command line arguments
         
     Returns:
-        ProcessingParams instance with validated parameters
+        ProcessingParams: Instance with validated parameters
         
     Raises:
         ValueError: If parameters are invalid
+        FileNotFoundError: If params_file is specified but not found
+        json.JSONDecodeError: If params_file contains invalid JSON
     """
     # Start with default ProcessingParams instance
     params = ProcessingParams()
@@ -70,8 +99,24 @@ def get_params(args: argparse.Namespace) -> ProcessingParams:
     params.validate()
     return params
 
-def main():
-    """Main entry point for the CLI application."""
+# =====================================================================
+# Main Application
+# =====================================================================
+
+def main() -> None:
+    """Main entry point for the CLI application.
+    
+    This function orchestrates the entire processing workflow:
+    1. Parse command-line arguments
+    2. Load and validate parameters
+    3. Load user mask if specified
+    4. Process the image series
+    5. Save results
+    6. Clean up resources
+    
+    The function handles errors gracefully and provides appropriate
+    error messages to the user.
+    """
     parser = create_parser()
     args = parser.parse_args()
     
@@ -79,6 +124,7 @@ def main():
         # Get parameters with validation
         params_model = get_params(args)
 
+        # Load user mask if specified
         if args.user_mask:
             user_mask = fabio.open(args.user_mask).data
             user_mask = user_mask.astype(bool)
