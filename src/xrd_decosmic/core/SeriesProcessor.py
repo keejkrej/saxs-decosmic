@@ -204,9 +204,6 @@ class SeriesProcessor:
         print(f"Cleaning image {idx} ...")
         img = self.get_img(idx)
         processor = ImageProcessor(img, self.combined_mask)
-        processor.load_params(
-            self.th_donut, self.th_streak, self.win_streak,
-            self.exp_donut, self.exp_streak)
         processor.clean_img()
         return processor
 
