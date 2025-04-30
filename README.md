@@ -14,6 +14,12 @@ pip install -e .
 
 ```bash
 python -m xrd_decosmic.cli \
---input-file /path/to/first_filename.tif \
---output /path/to/output/
+--input /path/to/first_filename.tif \
+--output /path/to/output/ \
+--th-donut 15 \
+--th-mask 0.05 \
+--th-streak 3 \
+--win-streak 3 \
+--exp-donut 9 \
+--exp-streak 3
 ```

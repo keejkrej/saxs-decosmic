@@ -28,11 +28,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Remove cosmic background from XRD 2D images')
     
     # Required arguments
-    parser.add_argument('--input-file', required=True, help='First image in the series')
-    parser.add_argument('--output-dir', required=True, help='Directory to save results')
+    parser.add_argument('--input', required=True, help='First image in the series')
+    parser.add_argument('--output', required=True, help='Directory to save results')
     
     # Optional arguments
-    parser.add_argument('--params-file', help='JSON file containing processing parameters')
     parser.add_argument('--user-mask', help='User-defined mask for modifiable pixels')
     parser.add_argument('--use-fabio', action='store_true', 
                        help='Use fabio to load image series (more efficient for certain formats)')
@@ -95,7 +94,7 @@ def main() -> None:
             user_mask = None
         
         # Process images
-        processor = SeriesProcessor(args.input_file,
+        processor = SeriesProcessor(args.input,
                                     th_donut=args.th_donut,
                                     th_mask=args.th_mask,
                                     th_streak=args.th_streak,
@@ -108,8 +107,8 @@ def main() -> None:
         processor.process()
         
         # Save results
-        processor.save_results(args.output_dir)
-        logger.info(f'Results saved to {args.output_dir}')
+        processor.save_results(args.output)
+        logger.info(f'Results saved to {args.output}')
         
         # Free up memory
         processor.cleanup()
