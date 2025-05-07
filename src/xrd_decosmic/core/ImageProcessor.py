@@ -1,5 +1,6 @@
 """
 Image processor for removing cosmic rays from XRD images.
+
 This module provides functionality for detecting and removing cosmic ray artifacts
 from XRD images, including both donut-shaped and streak-shaped artifacts.
 """
@@ -7,15 +8,20 @@ import logging
 import numpy as np
 from scipy.ndimage import convolve, maximum_filter
 from typing import Tuple
+
 logger = logging.getLogger(__name__)
+
 # =====================================================================
 # Image Processor Class
 # =====================================================================
+
 class ImageProcessor:
     """Processes XRD images to remove cosmic ray artifacts.
+    
     This class implements algorithms for detecting and removing cosmic ray
     artifacts from XRD images. It supports both donut-shaped and streak-shaped
     artifact removal with configurable parameters.
+    
     Attributes:
         img (np.ndarray): Input image data
         mask (np.ndarray): Mask for valid pixels, where True means can be modified
@@ -30,9 +36,11 @@ class ImageProcessor:
         sub_donut (np.ndarray): Subtracted donut artifacts
         sub_streak (np.ndarray): Subtracted streak artifacts
     """
+
     # =====================================================================
     # Initialization
     # =====================================================================
+
     def __init__(self,
                  img: np.ndarray,
                  mask: np.ndarray,
@@ -42,6 +50,7 @@ class ImageProcessor:
                  exp_donut: int,
                  exp_streak: int) -> None:
         """Initialize the image processor.
+        
         Args:
             img: Input image data as numpy array
             mask: Mask for valid pixels, where True means can be modified
@@ -49,20 +58,24 @@ class ImageProcessor:
         try:
             logger.debug("Initializing ImageProcessor with parameters: th_donut=%d, th_streak=%d, win_streak=%d, exp_donut=%d, exp_streak=%d",
                         th_donut, th_streak, win_streak, exp_donut, exp_streak)
+            
             if not isinstance(img, np.ndarray):
                 raise TypeError("Input image must be a numpy array")
             if not isinstance(mask, np.ndarray):
                 raise TypeError("Input mask must be a numpy array")
             if img.shape != mask.shape:
                 raise ValueError(f"Image shape {img.shape} does not match mask shape {mask.shape}")
+            
             self.img = img
             self.mask = mask
+            
             # Parameters
             self.th_donut = th_donut
             self.th_streak = th_streak
             self.win_streak = win_streak
             self.exp_donut = exp_donut
             self.exp_streak = exp_streak
+            
             # Results
             self.img_intermediate = None
             self.img_clean = None
@@ -75,14 +88,18 @@ class ImageProcessor:
         except Exception as e:
             logger.error(f"Failed to initialize ImageProcessor: {str(e)}")
             raise
+
     # =====================================================================
     # Private Methods
     # =====================================================================
+
     def _de_donut(self, img: np.ndarray, mask: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Remove donut-shaped cosmic ray artifacts.
+        
         Args:
             img: Input image as numpy array
             mask: Valid pixel mask as boolean array
+            
         Returns:
             Tuple containing:
                 - Cleaned image with donut artifacts removed
@@ -94,6 +111,7 @@ class ImageProcessor:
                 raise TypeError("Input image and mask must be numpy arrays")
             if img.shape != mask.shape:
                 raise ValueError(f"Image shape {img.shape} does not match mask shape {mask.shape}")
+            
             img_copy = np.copy(img)
             donut_mask = img_copy > self.th_donut
             donut_mask_expanded = maximum_filter(donut_mask, size=self.exp_donut)
@@ -104,11 +122,14 @@ class ImageProcessor:
         except Exception as e:
             logger.error(f"Failed to remove donut artifacts: {str(e)}")
             raise
+    
     def _de_streak(self, img: np.ndarray, mask: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Remove streak-shaped cosmic ray artifacts.
+        
         Args:
             img: Input image as numpy array
             mask: Valid pixel mask as boolean array
+            
         Returns:
             Tuple containing:
                 - Cleaned image with streak artifacts removed
@@ -121,6 +142,7 @@ class ImageProcessor:
                 raise TypeError("Input image and mask must be numpy arrays")
             if img.shape != mask.shape:
                 raise ValueError(f"Image shape {img.shape} does not match mask shape {mask.shape}")
+            
             img_copy = np.copy(img)
             img_binary = (img_copy > 0).astype(np.int32)
             img_binary = img_binary * mask
@@ -136,14 +158,18 @@ class ImageProcessor:
         except Exception as e:
             logger.error(f"Failed to remove streak artifacts: {str(e)}")
             raise
+
     # =====================================================================
     # Public Methods
     # =====================================================================
+
     def clean_img(self) -> None:
         """Clean the image by removing cosmic ray artifacts.
+        
         This method processes the image in two steps:
         1. Remove donut-shaped artifacts
         2. Remove streak-shaped artifacts
+        
         The results are stored in the instance attributes:
         - img_clean: Final cleaned image
         - img_intermediate: Image after donut removal
@@ -157,14 +183,17 @@ class ImageProcessor:
             logger.debug("Starting image cleaning process")
             if self.img is None or self.mask is None:
                 raise ValueError("Image and mask must be set before cleaning")
+            
             img_copy = np.copy(self.img)
             img_donut, self.mask_donut = self._de_donut(img_copy, self.mask)
             img_streak, self.mask_streak = self._de_streak(img_donut, self.mask)
+            
             self.img_intermediate = img_donut
             self.img_clean = img_streak
             self.mod_mask = self.mask_donut | self.mask_streak
             self.sub_donut = img_copy - img_donut
             self.sub_streak = img_donut - img_streak
+            
             logger.debug("Image cleaning complete. Total modified pixels: %d", np.sum(self.mod_mask))
             logger.debug("Donut artifacts removed: %d photons, Streak artifacts removed: %d photons",
                         np.sum(self.sub_donut), np.sum(self.sub_streak))
