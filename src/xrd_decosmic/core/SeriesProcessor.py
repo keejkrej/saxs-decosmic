@@ -91,7 +91,7 @@ class SeriesProcessor:
             self.first_filename = Path(first_filename).resolve()
             self._load_images(self.first_filename, use_fabio)
             self.user_mask = user_mask
-            self.get_std = calc_std
+            self.calc_std = calc_std
 
             # Processing parameters
             self.th_donut = th_donut
@@ -114,7 +114,7 @@ class SeriesProcessor:
             self.combined_mask = None
             self.sub_donut_avg = None
             self.sub_streak_avg = None
-            
+
             if self.calc_std:
                 self.img_std = None
                 self.img_std_intermediate = None
@@ -370,7 +370,7 @@ class SeriesProcessor:
             logger.error(f"Failed to process image series: {str(e)}")
             raise
 
-    def save_results(self, output_dir: str, prefix: str) -> None:
+    def save_results(self, output_dir: str, prefix: str = '') -> None:
         """Save processing results as TIFF files.
         
         This method saves the results of processing the entire series, including
