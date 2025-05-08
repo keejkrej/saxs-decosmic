@@ -364,7 +364,7 @@ class SeriesProcessor:
             logger.error(f"Failed to process image series: {str(e)}")
             raise
 
-    def save_results(self, output_dir: str) -> None:
+    def save_results(self, output_dir: str, prefix: str) -> None:
         """Save processing results as TIFF files.
         
         This method saves the results of processing the entire series, including
@@ -380,46 +380,46 @@ class SeriesProcessor:
             
             # Save direct averaged images
             fabio.tifimage.tifimage(data=self.img_avg).write(
-                output_dir / 'avg.tif'
+                output_dir / f'{prefix}_avg.tif'
             )
 
             # Save intermediate averaged images
             fabio.tifimage.tifimage(data=self.img_intermediate_avg).write(
-                output_dir / 'avg_intermediate.tif'
+                output_dir / f'{prefix}_intermediate.tif'
             )
 
             # Save cleaned averaged images
             fabio.tifimage.tifimage(data=self.img_clean_avg).write(
-                output_dir / 'avg_clean.tif'
+                output_dir / f'{prefix}_clean.tif'
             )
             
             # Save masks
             fabio.tifimage.tifimage(data=self.combined_mask.astype(np.int32)).write(
-                output_dir / 'mask.tif'
+                output_dir / f'{prefix}_mask.tif'
             )
             
             # Save subtracted components
             fabio.tifimage.tifimage(data=self.sub_donut_avg).write(
-                output_dir / 'donut.tif'
+                output_dir / f'{prefix}_donut.tif'
             )
 
             fabio.tifimage.tifimage(data=self.sub_streak_avg).write(
-                output_dir / 'streak.tif'
+                output_dir / f'{prefix}_streak.tif'
             ) 
 
             # Save standard deviation of images
             fabio.tifimage.tifimage(data=self.img_std).write(
-                output_dir / 'std.tif'
+                output_dir / f'{prefix}_std.tif'
             )
 
             # Save standard deviation of intermediate images
             fabio.tifimage.tifimage(data=self.img_std_intermediate).write(
-                output_dir / 'std_intermediate.tif'
+                output_dir / f'{prefix}_std_intermediate.tif'
             )
 
             # Save standard deviation of cleaned images 
             fabio.tifimage.tifimage(data=self.img_std_clean).write(
-                output_dir / 'std_clean.tif'
+                output_dir / f'{prefix}_std_clean.tif'
             )
 
             metadata = {

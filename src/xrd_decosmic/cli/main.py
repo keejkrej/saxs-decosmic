@@ -30,7 +30,8 @@ def parse_args():
     # Required arguments
     parser.add_argument('--input', required=True, help='First image in the series')
     parser.add_argument('--output', required=True, help='Directory to save results')
-    
+    parser.add_argument('--prefix', required=False, help='Prefix for output files')
+
     # Optional arguments
     parser.add_argument('--user-mask', help='User-defined mask for modifiable pixels')
     parser.add_argument('--use-fabio', action='store_true', 
@@ -107,7 +108,7 @@ def main() -> None:
         processor.process()
         
         # Save results
-        processor.save_results(args.output)
+        processor.save_results(args.output, args.prefix)
         logger.info(f'Results saved to {args.output}')
         
         # Free up memory
