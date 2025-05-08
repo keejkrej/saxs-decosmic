@@ -98,17 +98,24 @@ class SeriesProcessor:
             self.win_streak = win_streak
             self.exp_donut = exp_donut
             self.exp_streak = exp_streak
-            
-            # Processing results
-            self.img_avg = None
+
+            # Intermediate results
             self.img_binary_avg = None
             self.ring_mask = None
-            self.combined_mask = None
+            self.img_intermediate_num = None
+            self.img_clean_num = None
+
+            # Output results
+            self.img_avg = None
             self.img_intermediate_avg = None
             self.img_clean_avg = None
+            self.combined_mask = None
             self.sub_donut_avg = None
             self.sub_streak_avg = None
-            self.img_clean_num = None
+            self.img_std = None
+            self.img_std_intermediate = None
+            self.img_std_clean = None
+            
         except Exception as e:
             logger.error(f"Failed to initialize SeriesProcessor: {str(e)}")
             raise
@@ -313,8 +320,8 @@ class SeriesProcessor:
     # Public Methods
     # =====================================================================
 
-    def single_clean_img(self, idx: int) -> ImageProcessor:
-        """Clean a single image.
+    def process_single(self, idx: int) -> ImageProcessor:
+        """Process a single image.
         
         Args:
             idx: Index of the image to clean
@@ -332,18 +339,8 @@ class SeriesProcessor:
             img = self._get_img(idx)
             processor = ImageProcessor(img, self.combined_mask)
             processor.clean_img()
-            result = {
-                'img': processor.img,
-                'img_intermediate': processor.img_intermediate,
-                'img_clean': processor.img_clean,
-                'mask_donut': processor.mask_donut,
-                'mask_streak': processor.mask_streak,
-                'mod_mask': processor.mod_mask,
-                'sub_donut': processor.sub_donut,
-                'sub_streak': processor.sub_streak,
-            }
             logger.debug("Single image cleaned")
-            return result
+            return processor
         except Exception as e:
             logger.error(f"Failed to clean single image at index {idx}: {str(e)}")
             raise
@@ -365,15 +362,6 @@ class SeriesProcessor:
             self._std_avg_clean_img()
         except Exception as e:
             logger.error(f"Failed to process image series: {str(e)}")
-            raise
-
-    def cleanup(self) -> None:
-        """Clean up resources when the processor is deleted."""
-        try:
-            if hasattr(self, 'img_series'):
-                self.img_series.cleanup()
-        except Exception as e:
-            logger.error(f"Failed to cleanup resources: {str(e)}")
             raise
 
     def save_results(self, output_dir: str) -> None:
@@ -455,4 +443,13 @@ class SeriesProcessor:
                 json.dump(metadata, f)
         except Exception as e:
             logger.error(f"Failed to save results to {output_dir}: {str(e)}")
+            raise
+
+    def cleanup(self) -> None:
+        """Clean up resources when the processor is deleted."""
+        try:
+            if hasattr(self, 'img_series'):
+                self.img_series.cleanup()
+        except Exception as e:
+            logger.error(f"Failed to cleanup resources: {str(e)}")
             raise
