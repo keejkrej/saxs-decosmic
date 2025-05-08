@@ -71,7 +71,8 @@ class SeriesProcessor:
                 exp_donut: int,
                 exp_streak: int,
                 user_mask: Optional[np.ndarray] = None,
-                use_fabio: bool = False
+                use_fabio: bool = False,
+                calc_std: bool = False
                 ) -> None:
         """Initialize the processor.
         
@@ -90,6 +91,7 @@ class SeriesProcessor:
             self.first_filename = Path(first_filename).resolve()
             self._load_images(self.first_filename, use_fabio)
             self.user_mask = user_mask
+            self.get_std = calc_std
 
             # Processing parameters
             self.th_donut = th_donut
@@ -112,9 +114,11 @@ class SeriesProcessor:
             self.combined_mask = None
             self.sub_donut_avg = None
             self.sub_streak_avg = None
-            self.img_std = None
-            self.img_std_intermediate = None
-            self.img_std_clean = None
+            
+            if self.calc_std:
+                self.img_std = None
+                self.img_std_intermediate = None
+                self.img_std_clean = None
             
         except Exception as e:
             logger.error(f"Failed to initialize SeriesProcessor: {str(e)}")
@@ -321,7 +325,7 @@ class SeriesProcessor:
     # =====================================================================
 
     def process_single(self, idx: int) -> ImageProcessor:
-        """Process a single image.
+        """Process a single image. For debugging purposes.
         
         Args:
             idx: Index of the image to clean
@@ -356,10 +360,12 @@ class SeriesProcessor:
         """
         try:
             self._avg_img()
-            self._std_avg_img()
+            if self.calc_std:
+                self._std_avg_img()
             self._mask_img()
             self._avg_clean_img()
-            self._std_avg_clean_img()
+            if self.calc_std:
+                self._std_avg_clean_img()
         except Exception as e:
             logger.error(f"Failed to process image series: {str(e)}")
             raise

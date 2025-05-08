@@ -36,7 +36,9 @@ def parse_args():
     parser.add_argument('--user-mask', help='User-defined mask for modifiable pixels')
     parser.add_argument('--use-fabio', action='store_true', 
                        help='Use fabio to load image series (more efficient for certain formats)')
-    
+    parser.add_argument('--calc-std', action='store_true',
+                       help='Calculate standard deviation of images for error propagation')
+
     # Processing parameters (optional, will use defaults if not specified)
     parser.add_argument('--th-donut', type=float, default=15, 
                        help='Threshold for donut detection (higher = more strict)')
@@ -103,7 +105,8 @@ def main() -> None:
                                     exp_donut=args.exp_donut,
                                     exp_streak=args.exp_streak,
                                     user_mask=user_mask,
-                                    use_fabio=args.use_fabio)
+                                    use_fabio=args.use_fabio,
+                                    calc_std=args.calc_std)
 
         processor.process()
         
