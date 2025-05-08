@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument('--output', required=True, help='Directory to save results')
 
     # Optional arguments
-    parser.add_argument('--prefix', default='', help='Prefix for output files')
+    parser.add_argument('--prefix', type=str, default='', help='Prefix for output files')
     parser.add_argument('--user-mask', help='User-defined mask for modifiable pixels')
     parser.add_argument('--use-fabio', action='store_true', 
                        help='Use fabio to load image series (more efficient for certain formats)')
