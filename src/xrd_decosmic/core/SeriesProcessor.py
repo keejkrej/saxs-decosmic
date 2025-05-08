@@ -413,20 +413,21 @@ class SeriesProcessor:
                 output_dir / f'{prefix}_streak.tif'
             ) 
 
-            # Save standard deviation of images
-            fabio.tifimage.tifimage(data=self.img_std).write(
-                output_dir / f'{prefix}_std.tif'
-            )
+            if self.calc_std:
+                # Save standard deviation of images
+                fabio.tifimage.tifimage(data=self.img_std).write(
+                    output_dir / f'{prefix}_std.tif'
+                )
 
-            # Save standard deviation of intermediate images
-            fabio.tifimage.tifimage(data=self.img_std_intermediate).write(
-                output_dir / f'{prefix}_std_intermediate.tif'
-            )
+                # Save standard deviation of intermediate images
+                fabio.tifimage.tifimage(data=self.img_std_intermediate).write(
+                    output_dir / f'{prefix}_std_intermediate.tif'
+                )
 
-            # Save standard deviation of cleaned images 
-            fabio.tifimage.tifimage(data=self.img_std_clean).write(
-                output_dir / f'{prefix}_std_clean.tif'
-            )
+                # Save standard deviation of cleaned images 
+                fabio.tifimage.tifimage(data=self.img_std_clean).write(
+                    output_dir / f'{prefix}_std_clean.tif'
+                )
 
             metadata = {
                 'data': {
