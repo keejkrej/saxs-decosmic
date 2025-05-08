@@ -30,9 +30,9 @@ def parse_args():
     # Required arguments
     parser.add_argument('--input', required=True, help='First image in the series')
     parser.add_argument('--output', required=True, help='Directory to save results')
-    parser.add_argument('--prefix', required=False, help='Prefix for output files')
 
     # Optional arguments
+    parser.add_argument('--prefix', default='', help='Prefix for output files')
     parser.add_argument('--user-mask', help='User-defined mask for modifiable pixels')
     parser.add_argument('--use-fabio', action='store_true', 
                        help='Use fabio to load image series (more efficient for certain formats)')
