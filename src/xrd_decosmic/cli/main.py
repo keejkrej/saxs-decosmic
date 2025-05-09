@@ -108,10 +108,10 @@ def main() -> None:
                                     use_fabio=args.use_fabio,
                                     calc_std=args.calc_std)
 
-        processor.process()
+        processor.process_all()
         
         # Save results
-        processor.save_results(args.output, args.prefix)
+        processor.save_all(args.output, args.prefix)
         logger.info(f'Results saved to {args.output}')
         
         # Free up memory

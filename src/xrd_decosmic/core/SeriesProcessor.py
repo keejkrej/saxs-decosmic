@@ -257,8 +257,8 @@ class SeriesProcessor:
             
             self.img_intermediate_avg = np.divide(img_intermediate_sum, self.img_intermediate_num, out=np.zeros_like(img_intermediate_sum), where=self.img_intermediate_num != 0)
             self.img_clean_avg = np.divide(img_clean_sum, self.img_clean_num, out=np.zeros_like(img_clean_sum), where=self.img_clean_num != 0)
-            self.sub_donut_avg = np.divide(sub_donut_sum, self.img_num, out=np.zeros_like(sub_donut_sum), where=self.img_num != 0)
-            self.sub_streak_avg = np.divide(sub_streak_sum, self.img_num, out=np.zeros_like(sub_streak_sum), where=self.img_num != 0)
+            self.sub_donut_avg = sub_donut_sum / self.img_num
+            self.sub_streak_avg = sub_streak_sum / self.img_num
             logger.debug("Cleaned average image calculated")
         except Exception as e:
             logger.error(f"Failed to clean images: {str(e)}")
@@ -355,7 +355,56 @@ class SeriesProcessor:
             logger.error(f"Failed to clean single image at index {idx}: {str(e)}")
             raise
 
-    def process(self) -> None:
+    def save_single(self, idx: int, output_dir: str, prefix: str = '') -> None:
+        """Save a single processed image.
+        
+        Args:
+            idx: Index of the image to save
+            output_dir: Directory to save the image
+            prefix: Prefix for the image file name
+        """
+        try:
+            processor = self.process_single(idx)
+            output_dir = Path(output_dir).resolve()
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            fabio.tifimage.tifimage(data=processor.img).write(
+                output_dir / f'{prefix}_{idx}.tif'
+            )
+
+            fabio.tifimage.tifimage(data=processor.img_intermediate).write(
+                output_dir / f'{prefix}_intermediate_{idx}.tif'
+            )
+            
+            fabio.tifimage.tifimage(data=processor.img_clean).write(
+                output_dir / f'{prefix}_clean_{idx}.tif'
+            )
+
+            fabio.tifimage.tifimage(data=processor.sub_donut).write(
+                output_dir / f'{prefix}_donut_{idx}.tif'
+            )
+
+            fabio.tifimage.tifimage(data=processor.sub_streak).write(
+                output_dir / f'{prefix}_streak_{idx}.tif'
+            )
+
+            fabio.tifimage.tifimage(data=processor.mask_donut.astype(np.int32)).write(
+                output_dir / f'{prefix}_mask_donut_{idx}.tif'
+            )
+
+            fabio.tifimage.tifimage(data=processor.mask_streak.astype(np.int32)).write(
+                output_dir / f'{prefix}_mask_streak_{idx}.tif'
+            )
+
+            fabio.tifimage.tifimage(data=processor.mod_mask.astype(np.int32)).write(
+                output_dir / f'{prefix}_mod_mask_{idx}.tif'
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to save single image at index {idx}: {str(e)}")
+            raise
+
+    def process_all(self) -> None:
         """Main processing pipeline for cosmic ray removal.
         
         This method orchestrates the complete processing workflow:
@@ -376,7 +425,7 @@ class SeriesProcessor:
             logger.error(f"Failed to process image series: {str(e)}")
             raise
 
-    def save_results(self, output_dir: str, prefix: str = '') -> None:
+    def save_all(self, output_dir: str, prefix: str = '') -> None:
         """Save processing results as TIFF files.
         
         This method saves the results of processing the entire series, including
