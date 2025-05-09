@@ -341,7 +341,13 @@ class SeriesProcessor:
 
             logger.info(f"Cleaning image {idx} ...")
             img = self._get_img(idx)
-            processor = ImageProcessor(img, self.combined_mask)
+            processor = ImageProcessor(img,
+                                       self.combined_mask,
+                                       self.th_donut,
+                                       self.th_streak,
+                                       self.win_streak,
+                                       self.exp_donut,
+                                       self.exp_streak)
             processor.clean_img()
             logger.debug("Single image cleaned")
             return processor
