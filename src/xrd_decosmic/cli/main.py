@@ -1,16 +1,13 @@
 """
-Main entry point for the CLI application.
-
-This module provides the command-line interface for the XRD cosmic ray removal
-tool. It handles argument parsing, parameter loading, and orchestrates the
-processing of image series.
+Comment: Main entry point for the CLI application.
 """
 import argparse
 import logging
 import sys
 import fabio
 
-from ..core import SeriesProcessor
+from ..core.series_processor import SeriesProcessor, SeriesConfig, SeriesResult
+from ..core.single_processor import SingleProcessor, SingleConfig, SingleResult
 
 # =====================================================================
 # Argument Parsing
@@ -20,12 +17,12 @@ def parse_args():
     """Create and configure the argument parser.
     
     This function sets up the argument parser with all required and optional
-    command-line arguments needed for the XRD cosmic ray removal tool.
+    command-line arguments needed for decosmic.
     
     Returns:
         argparse.ArgumentParser: Configured parser with all arguments defined
     """
-    parser = argparse.ArgumentParser(description='Remove cosmic background from XRD 2D images')
+    parser = argparse.ArgumentParser(description='Remove high-energy background from 2D images using decosmic')
     
     # Required arguments
     parser.add_argument('--input', required=True, help='First image in the series')
@@ -36,9 +33,7 @@ def parse_args():
     parser.add_argument('--user-mask', help='User-defined mask for modifiable pixels')
     parser.add_argument('--use-fabio', action='store_true', 
                        help='Use fabio to load image series (more efficient for certain formats)')
-    parser.add_argument('--calc-std', action='store_true',
-                       help='Calculate standard deviation of images for error propagation')
-
+    
     # Processing parameters (optional, will use defaults if not specified)
     parser.add_argument('--th-donut', type=float, default=15, 
                        help='Threshold for donut detection (higher = more strict)')
@@ -97,16 +92,18 @@ def main() -> None:
             user_mask = None
         
         # Process images
-        processor = SeriesProcessor(args.input,
-                                    th_donut=args.th_donut,
-                                    th_mask=args.th_mask,
-                                    th_streak=args.th_streak,
-                                    win_streak=args.win_streak,
-                                    exp_donut=args.exp_donut,
-                                    exp_streak=args.exp_streak,
-                                    user_mask=user_mask,
-                                    use_fabio=args.use_fabio,
-                                    calc_std=args.calc_std)
+        series_config = SeriesConfig(th_donut=args.th_donut,
+                                     th_mask=args.th_mask,
+                                     th_streak=args.th_streak,
+                                     win_streak=args.win_streak,
+                                     exp_donut=args.exp_donut,
+                                     exp_streak=args.exp_streak)
+        processor = SeriesProcessor(
+            args.input,
+            series_config,
+            user_mask,
+            args.use_fabio
+        )
 
         processor.process_all()
         
