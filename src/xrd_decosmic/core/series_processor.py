@@ -14,7 +14,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from .single_processor import SingleProcessor, SingleConfig
+from .single_processor import SingleProcessor, SingleConfig, SingleResult
 from .image_series import ImageSeries
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ class SeriesProcessor:
     def __init__(self,
                 first_filename: str,
                 series_config: SeriesConfig,
-                mask_user: Optional[np.ndarray] = None,
+                mask_modifiable: Optional[np.ndarray] = None,
                 use_fabio: bool = False
                 ) -> None:
         """Initialize the processor.
@@ -94,13 +94,14 @@ class SeriesProcessor:
         Args:
             first_filename: Path to the first image or directory containing images
             series_config: Configuration for the series processor
-            mask_user: User-defined mask for valid pixels (default: True)
+            mask_modifiable: User-defined mask for modifiable pixels, where True means can be modified
             use_fabio: Whether to use fabio.open_series instead of manual loading
         """
         try:
-            self.series_result = SeriesResult()
+            self.series_result = SeriesResult(
+                mask_modifiable=mask_modifiable
+            )
             self.series_config = series_config
-            self.mask_user = mask_user
             self.first_filename = Path(first_filename).resolve()
             if not os.path.isfile(self.first_filename):
                 raise FileNotFoundError(f"File {self.first_filename} not found")
@@ -199,8 +200,8 @@ class SeriesProcessor:
             self.series_result.mask_protect = self.series_result.img_avg_binary < self.series_config.th_mask
             logger.debug(f"Number of pixels protected as ring features: {np.sum(not self.series_result.mask_protect)}")
 
-            if self.mask_user is not None:
-                self.series_result.mask_modifiable = self.series_result.mask_protect & self.mask_user
+            if self.series_result.mask_modifiable is not None:
+                self.series_result.mask_modifiable = self.series_result.mask_protect & self.series_result.mask_modifiable
             else:
                 self.series_result.mask_modifiable = self.series_result.mask_protect
 
@@ -231,8 +232,8 @@ class SeriesProcessor:
                 img = self._get_img(i)
                 processor = SingleProcessor(
                     img,
-                    self.series_result.mask_modifiable,
-                    self.series_config
+                    self.series_config,
+                    self.series_result.mask_modifiable
                 )
                 single_result = processor.clean_img()
                 
@@ -288,8 +289,8 @@ class SeriesProcessor:
                 img = self._get_img(i)
                 processor = SingleProcessor(
                     img,
-                    self.series_result.mask_modifiable,
-                    self.series_config
+                    self.series_config,
+                    self.series_result.mask_modifiable
                 )
                 single_result = processor.clean_img()
 
@@ -305,85 +306,7 @@ class SeriesProcessor:
     # Public Methods
     # =====================================================================
 
-    def process_single(self, idx: int) -> SingleProcessor:
-        """Process a single image. For debugging purposes.
-        
-        Args:
-            idx: Index of the image to clean
-            
-        Returns:
-            SingleProcessor: Processor instance containing the cleaned image
-        """
-        try:
-            if self.series_result.img_avg_direct is None:
-                self._avg_direct()
-            if self.series_result.mask_modifiable is None:
-                self._mask()
-
-            logger.info(f"Cleaning image {idx} ...")
-            img = self._get_img(idx)
-            processor = SingleProcessor(
-                img,
-                self.series_result.mask_modifiable,
-                self.series_config
-            )
-            single_result = processor.clean_img()
-            logger.debug(f"Single image {idx} cleaned")
-            return single_result
-        except Exception as e:
-            logger.error(f"Failed to clean single image at index {idx}: {str(e)}")
-            raise
-
-    def save_single(self, idx: int, output_dir: str, prefix: str = '') -> None:
-        """Save a single processed image.
-        
-        Args:
-            idx: Index of the image to save
-            output_dir: Directory to save the image
-            prefix: Prefix for the image file name
-        """
-        try:
-            single_result = self.process_single(idx)
-            output_dir = Path(output_dir).resolve()
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            fabio.tifimage.tifimage(data=single_result.img_orig).write(
-                output_dir / f'{prefix}_{idx}.tif'
-            )
-
-            fabio.tifimage.tifimage(data=single_result.img_half_clean).write(
-                output_dir / f'{prefix}_half_clean_{idx}.tif'
-            )
-            
-            fabio.tifimage.tifimage(data=single_result.img_clean).write(
-                output_dir / f'{prefix}_half_clean_{idx}.tif'
-            )
-
-            fabio.tifimage.tifimage(data=single_result.sub_donut).write(
-                output_dir / f'{prefix}_sub_donut_{idx}.tif'
-            )
-
-            fabio.tifimage.tifimage(data=single_result.sub_streak).write(
-                output_dir / f'{prefix}_sub_streak_{idx}.tif'
-            )
-
-            fabio.tifimage.tifimage(data=single_result.mask_donut.astype(np.int32)).write(
-                output_dir / f'{prefix}_mask_donut_{idx}.tif'
-            )
-
-            fabio.tifimage.tifimage(data=single_result.mask_streak.astype(np.int32)).write(
-                output_dir / f'{prefix}_mask_streak_{idx}.tif'
-            )
-
-            fabio.tifimage.tifimage(data=single_result.mask_modified.astype(np.int32)).write(
-                output_dir / f'{prefix}_mask_modified_{idx}.tif'
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to save single image at index {idx}: {str(e)}")
-            raise
-
-    def process_all(self) -> None:
+    def process_series(self) -> None:
         """Main processing pipeline for decosmic.
         
         This method orchestrates the complete processing workflow:
@@ -400,12 +323,13 @@ class SeriesProcessor:
             self._avg_clean()
             self._err_clean()
             logger.info('Processing finished')
+
             return self.series_result
         except Exception as e:
             logger.error(f"Failed to process image series: {str(e)}")
             raise
 
-    def save_all(self, output_dir: str, prefix: str = '') -> None:
+    def save_series(self, series_result: SeriesResult, output_dir: str, prefix: str = '') -> None:
         """Save processing results as TIFF files.
         
         This method saves the results of processing the entire series, including
@@ -420,68 +344,48 @@ class SeriesProcessor:
             output_dir.mkdir(parents=True, exist_ok=True)
             
             # Save direct averaged images
-            fabio.tifimage.tifimage(data=self.series_result.img_avg_direct).write(
+            fabio.tifimage.tifimage(data=series_result.img_avg_direct).write(
                 output_dir / f'{prefix}_avg_direct.tif'
             )
 
             # Save intermediate averaged images
-            fabio.tifimage.tifimage(data=self.series_result.img_avg_half_clean).write(
+            fabio.tifimage.tifimage(data=series_result.img_avg_half_clean).write(
                 output_dir / f'{prefix}_avg_half_clean.tif'
             )
 
             # Save cleaned averaged images
-            fabio.tifimage.tifimage(data=self.series_result.img_avg_clean).write(
+            fabio.tifimage.tifimage(data=series_result.img_avg_clean).write(
                 output_dir / f'{prefix}_avg_clean.tif'
             )
             
             # Save masks
-            fabio.tifimage.tifimage(data=self.series_result.mask_modifiable.astype(np.int32)).write(
+            fabio.tifimage.tifimage(data=series_result.mask_modifiable.astype(np.int32)).write(
                 output_dir / f'{prefix}_mask_modifiable.tif'
             )
             
             # Save subtracted components
-            fabio.tifimage.tifimage(data=self.series_result.sub_avg_donut).write(
+            fabio.tifimage.tifimage(data=series_result.sub_avg_donut).write(
                 output_dir / f'{prefix}_sub_avg_donut.tif'
             )
 
-            fabio.tifimage.tifimage(data=self.series_result.sub_avg_streak).write(
+            fabio.tifimage.tifimage(data=series_result.sub_avg_streak).write(
                 output_dir / f'{prefix}_sub_avg_streak.tif'
             ) 
 
             # Save standard deviation of images
-            fabio.tifimage.tifimage(data=self.series_result.img_err_direct).write(
+            fabio.tifimage.tifimage(data=series_result.img_err_direct).write(
                 output_dir / f'{prefix}_std_direct.tif'
                 )
 
             # Save standard deviation of intermediate images
-            fabio.tifimage.tifimage(data=self.series_result.img_err_half_clean).write(
+            fabio.tifimage.tifimage(data=series_result.img_err_half_clean).write(
                 output_dir / f'{prefix}_std_half_clean.tif'
                 )
 
             # Save standard deviation of cleaned images 
-            fabio.tifimage.tifimage(data=self.series_result.img_err_clean).write(
+            fabio.tifimage.tifimage(data=series_result.img_err_clean).write(
                 output_dir / f'{prefix}_std_clean.tif'
             )
-
-            metadata = {
-                'data': {
-                    'path': os.path.dirname(self.first_filename),
-                    'nframes': self.nframes,
-                    'img_shape': self.shape,
-                    'img_dtype': str(self.dtype)
-                },
-                'parameters': {
-                    'th_mask': self.series_config.th_mask,
-                    'th_donut': self.series_config.th_donut,
-                    'th_streak': self.series_config.th_streak,
-                    'win_streak': self.series_config.win_streak,
-                    'exp_donut': self.series_config.exp_donut,
-                    'exp_streak': self.series_config.exp_streak
-                }
-            }
-            # Save parameters
-            with open(output_dir / 'metadata.json', 'w') as f:
-                json.dump(metadata, f)
         except Exception as e:
             logger.error(f"Failed to save results to {output_dir}: {str(e)}")
             raise

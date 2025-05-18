@@ -79,17 +79,19 @@ class SingleProcessor:
 
     def __init__(self,
                  img_orig: np.ndarray,
-                 mask_modifiable: np.ndarray,
-                 single_config: SingleConfig) -> None:
+                 single_config: SingleConfig,
+                 mask_modifiable: Optional[np.ndarray] = None) -> None:
         """Initialize the image processor.
         
         Args:
             img: Input image data as numpy array
             mask: External mask for modifiable pixels, where True means can be modified
         """
-        try:            
+        try:
             if not isinstance(img_orig, np.ndarray):
                 raise TypeError("Input image must be a numpy array")
+            if mask_modifiable is None:
+                mask_modifiable = np.ones(img_orig.shape, dtype=bool)
             if not isinstance(mask_modifiable, np.ndarray):
                 raise TypeError("Input mask must be a numpy array")
             if img_orig.shape != mask_modifiable.shape:
@@ -192,7 +194,7 @@ class SingleProcessor:
     # Public Methods
     # =====================================================================
 
-    def clean_img(self) -> None:
+    def clean_img(self) -> SingleResult:
         """Clean the image by removing high energy background.
         
         This method processes the image in two steps:
@@ -216,6 +218,7 @@ class SingleProcessor:
             
             logger.debug(f"Image cleaning complete. Total modified pixels: {np.sum(self.single_result.mask_modified)}")
             logger.debug(f"Donut features removed: {np.sum(self.single_result.sub_donut)} photons, Streak features removed: {np.sum(self.single_result.sub_streak)} photons")
+            
             return self.single_result
         except Exception as e:
             logger.error(f"Failed to clean image: {e}")

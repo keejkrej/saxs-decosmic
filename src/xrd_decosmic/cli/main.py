@@ -105,10 +105,10 @@ def main() -> None:
             args.use_fabio
         )
 
-        processor.process_all()
+        series_result = processor.process_series()
         
         # Save results
-        processor.save_all(args.output, args.prefix)
+        processor.save_series(series_result, args.output, args.prefix)
         logger.info(f'Results saved to {args.output}')
         
         # Free up memory
