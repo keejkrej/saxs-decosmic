@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import logging
 import numpy as np
 from scipy.ndimage import convolve, maximum_filter
-from typing import Tuple, Optional
+from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -48,14 +48,14 @@ class SingleResult:
         sub_streak (np.ndarray): Subtracted streak artifacts
     """
     img_orig: np.ndarray
-    img_half_clean: Optional[np.ndarray] = None
-    img_clean: Optional[np.ndarray] = None
+    img_half_clean: np.ndarray | None = None
+    img_clean: np.ndarray | None = None
     mask_modifiable: np.ndarray
-    mask_donut: Optional[np.ndarray] = None
-    mask_streak: Optional[np.ndarray] = None
-    mask_modified: Optional[np.ndarray] = None
-    sub_donut: Optional[np.ndarray] = None
-    sub_streak: Optional[np.ndarray] = None
+    mask_donut: np.ndarray | None = None
+    mask_streak: np.ndarray | None = None
+    mask_modified: np.ndarray | None = None
+    sub_donut: np.ndarray | None = None
+    sub_streak: np.ndarray | None = None
 
 # =====================================================================
 # Single Image Processor Class
@@ -80,7 +80,7 @@ class SingleProcessor:
     def __init__(self,
                  img_orig: np.ndarray,
                  single_config: SingleConfig,
-                 mask_modifiable: Optional[np.ndarray] = None) -> None:
+                 mask_modifiable: np.ndarray | None = None) -> None:
         """Initialize the image processor.
         
         Args:

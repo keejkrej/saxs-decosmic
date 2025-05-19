@@ -9,7 +9,6 @@ import logging
 import os
 import fabio
 import numpy as np
-from typing import Optional
 from pathlib import Path
 
 from tqdm import tqdm
@@ -49,17 +48,17 @@ class SeriesResult:
         img_err_half_clean (np.ndarray): Error of half-cleaned average
         img_err_clean (np.ndarray): Error of cleaned average
     """
-    img_avg_direct: Optional[np.ndarray] = None
-    img_avg_binary: Optional[np.ndarray] = None
-    mask_protect: Optional[np.ndarray] = None
-    mask_modifiable: Optional[np.ndarray] = None
-    img_avg_clean: Optional[np.ndarray] = None
-    img_avg_half_clean: Optional[np.ndarray] = None
-    sub_avg_donut: Optional[np.ndarray] = None
-    sub_avg_streak: Optional[np.ndarray] = None
-    img_err_direct: Optional[np.ndarray] = None
-    img_err_half_clean: Optional[np.ndarray] = None
-    img_err_clean: Optional[np.ndarray] = None
+    img_avg_direct: np.ndarray | None = None
+    img_avg_binary: np.ndarray | None = None
+    mask_protect: np.ndarray | None = None
+    mask_modifiable: np.ndarray | None = None
+    img_avg_clean: np.ndarray | None = None
+    img_avg_half_clean: np.ndarray | None = None
+    sub_avg_donut: np.ndarray | None = None
+    sub_avg_streak: np.ndarray | None = None
+    img_err_direct: np.ndarray | None = None
+    img_err_half_clean: np.ndarray | None = None
+    img_err_clean: np.ndarray | None = None
 
 # =====================================================================
 # Series Processor Class
@@ -86,7 +85,7 @@ class SeriesProcessor:
     def __init__(self,
                 first_filename: str,
                 series_config: SeriesConfig,
-                mask_modifiable: Optional[np.ndarray] = None,
+                mask_modifiable: np.ndarray | None = None,
                 use_fabio: bool = False
                 ) -> None:
         """Initialize the processor.
