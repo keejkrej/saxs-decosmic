@@ -9,6 +9,7 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 import os
 import numpy as np
+import tifffile
 
 # =====================================================================
 # Base Image Series Class
@@ -123,10 +124,7 @@ class ManualImageSeries(BaseImageSeries):
         if not 0 <= index < self.nframes:
             raise IndexError(f"Frame index {index} out of range [0, {self.nframes})")
         
-        frame = fabio.open(str(self.files[index]))
-        data = frame.data.copy()  # Make a copy since frame will be closed
-        frame.close()
-        return data
+        return tifffile.imread(str(self.files[index]))
 
     def cleanup(self) -> None:
         """Clean up any resources held by the implementation.
@@ -178,8 +176,14 @@ class FabioImageSeries(BaseImageSeries):
         Raises:
             IndexError: If the index is out of range
         """
-        frame = self.img_series.get_frame(index)
-        return frame.data
+        try:
+            frame = self.img_series.get_frame(index)
+            if hasattr(frame, 'data') and frame.data is not None:
+                return frame.data
+            else:
+                raise IndexError(f"Frame {index} has no data")
+        except Exception as e:
+            raise IndexError(f"Failed to get frame {index}: {str(e)}")
 
     def cleanup(self) -> None:
         """Clean up any resources held by the implementation.

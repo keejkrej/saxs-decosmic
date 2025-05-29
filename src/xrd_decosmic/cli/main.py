@@ -108,7 +108,7 @@ def main() -> None:
         series_result = processor.process_series()
         
         # Save results
-        processor.save_series(series_result, args.output, args.prefix)
+        series_result.save(args.output, args.prefix)
         logger.info(f'Results saved to {args.output}')
         
         # Free up memory

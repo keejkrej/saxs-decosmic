@@ -5,8 +5,7 @@ import argparse
 import logging
 import sys
 import matplotlib.pyplot as plt
-import numpy as np
-import fabio
+import tifffile
 
 from ..core.single_processor import SingleProcessor, SingleConfig, SingleResult
 
@@ -48,7 +47,7 @@ def plot_results(result: SingleResult) -> None:
     fig, axes = plt.subplots(2, 3, figsize=(15, 8))
     
     # Original image
-    axes[0, 0].imshow(result.img, cmap='viridis')
+    axes[0, 0].imshow(result.img_orig, cmap='viridis')
     axes[0, 0].set_title('Original Image')
     
     # Cleaned image
@@ -64,11 +63,11 @@ def plot_results(result: SingleResult) -> None:
     axes[1, 0].set_title('Streak Mask')
     
     # Combined modification mask
-    axes[1, 1].imshow(result.mod_mask, cmap='gray')
+    axes[1, 1].imshow(result.mask_modified, cmap='gray')
     axes[1, 1].set_title('Combined Mask')
     
     # Subtracted artifacts (donut + streak)
-    subtracted = result.sub_donut + result.sub_streak
+    subtracted = result.sub_donut + result.sub_streak if result.sub_donut is not None and result.sub_streak is not None else None
     axes[1, 2].imshow(subtracted, cmap='viridis')
     axes[1, 2].set_title('Subtracted Artifacts')
     
@@ -89,12 +88,12 @@ def main() -> None:
     
     try:
         # Load the single image
-        img = fabio.open(args.input).data
+        img = tifffile.imread(args.input)
         
         # Load user mask if specified
         user_mask = None
         if args.user_mask:
-            user_mask = fabio.open(args.user_mask).data.astype(bool)
+            user_mask = tifffile.imread(args.user_mask).astype(bool)
         
         # Create SingleConfig from CLI args
         config = SingleConfig(

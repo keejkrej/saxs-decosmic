@@ -5,9 +5,12 @@ Class: SingleProcessor
 """
 from dataclasses import dataclass
 import logging
+from pathlib import Path
 import numpy as np
 from scipy.ndimage import convolve, maximum_filter
 from typing import Tuple
+
+import tifffile
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +53,28 @@ class SingleResult:
     img_orig: np.ndarray
     img_half_clean: np.ndarray | None = None
     img_clean: np.ndarray | None = None
-    mask_modifiable: np.ndarray
+    mask_modifiable: np.ndarray | None = None
     mask_donut: np.ndarray | None = None
     mask_streak: np.ndarray | None = None
     mask_modified: np.ndarray | None = None
     sub_donut: np.ndarray | None = None
     sub_streak: np.ndarray | None = None
+
+    def save(self, output_dir: str, prefix: str = '') -> None:
+        """Save the results to a file.
+        
+        Args:
+            output_path: Path to the output file
+        """
+        output_path = Path(output_dir).resolve()
+        output_path.mkdir(parents=True, exist_ok=True)
+        
+        for key, value in self.__dict__.items():
+            if value is not None:
+                tifffile.imwrite(
+                    output_path / f'{prefix}_{key}.tif',
+                    value
+                )
 
 # =====================================================================
 # Single Image Processor Class

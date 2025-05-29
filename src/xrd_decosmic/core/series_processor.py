@@ -4,16 +4,15 @@ Dataclass: SeriesConfig, SeriesResult
 Class: SeriesProcessor
 """
 from dataclasses import dataclass
-import json
 import logging
 import os
-import fabio
 import numpy as np
 from pathlib import Path
 
+import tifffile
 from tqdm import tqdm
 
-from .single_processor import SingleProcessor, SingleConfig, SingleResult
+from .single_processor import SingleProcessor, SingleConfig
 from .image_series import ImageSeries
 
 logger = logging.getLogger(__name__)
@@ -60,6 +59,22 @@ class SeriesResult:
     img_err_half_clean: np.ndarray | None = None
     img_err_clean: np.ndarray | None = None
 
+    def save(self, output_dir: str, prefix: str = '') -> None:
+        """Save the results to a file.
+        
+        Args:
+            output_path: Path to the output file
+        """
+        output_path = Path(output_dir).resolve()
+        output_path.mkdir(parents=True, exist_ok=True)
+        
+        for key, value in self.__dict__.items():
+            if value is not None:
+                tifffile.imwrite(
+                    output_path / f'{prefix}_{key}.tif',
+                    value
+                )
+
 # =====================================================================
 # Series Processor Class
 # =====================================================================
@@ -101,7 +116,7 @@ class SeriesProcessor:
                 mask_modifiable=mask_modifiable
             )
             self.series_config = series_config
-            self.first_filename = Path(first_filename).resolve()
+            self.first_filename = str(Path(first_filename).resolve())
             if not os.path.isfile(self.first_filename):
                 raise FileNotFoundError(f"File {self.first_filename} not found")
             self._load_images(self.first_filename, use_fabio=use_fabio)
@@ -116,7 +131,7 @@ class SeriesProcessor:
     # Private Methods
     # =====================================================================
 
-    def _load_images(self, first_filename: Path, use_fabio: bool = False) -> None:
+    def _load_images(self, first_filename: str, use_fabio: bool = False) -> None:
         """Load images from a file.
         
         Args:
@@ -193,7 +208,7 @@ class SeriesProcessor:
         This method creates a mask to protect ring features by identifying pixels that appear consistently across the image series (using the binary average) and combining this with any user-specified mask regions.
         """
         try:
-            if self.img_binary_avg is None:
+            if self.series_result.img_avg_binary is None:
                 raise ValueError("Binary average image not calculated")
             
             self.series_result.mask_protect = self.series_result.img_avg_binary < self.series_config.th_mask
@@ -305,7 +320,7 @@ class SeriesProcessor:
     # Public Methods
     # =====================================================================
 
-    def process_series(self) -> None:
+    def process_series(self) -> SeriesResult:
         """Main processing pipeline for decosmic.
         
         This method orchestrates the complete processing workflow:
@@ -326,67 +341,6 @@ class SeriesProcessor:
             return self.series_result
         except Exception as e:
             logger.error(f"Failed to process image series: {str(e)}")
-            raise
-
-    def save_series(self, series_result: SeriesResult, output_dir: str, prefix: str = '') -> None:
-        """Save processing results as TIFF files.
-        
-        This method saves the results of processing the entire series, including
-        averaged images, cleaned averages, differences, masks, and subtracted
-        components.
-        
-        Args:
-            output_dir: Directory to save the results
-        """
-        try:
-            output_dir = Path(output_dir).resolve()
-            output_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Save direct averaged images
-            fabio.tifimage.tifimage(data=series_result.img_avg_direct).write(
-                output_dir / f'{prefix}_avg_direct.tif'
-            )
-
-            # Save intermediate averaged images
-            fabio.tifimage.tifimage(data=series_result.img_avg_half_clean).write(
-                output_dir / f'{prefix}_avg_half_clean.tif'
-            )
-
-            # Save cleaned averaged images
-            fabio.tifimage.tifimage(data=series_result.img_avg_clean).write(
-                output_dir / f'{prefix}_avg_clean.tif'
-            )
-            
-            # Save masks
-            fabio.tifimage.tifimage(data=series_result.mask_modifiable.astype(np.int32)).write(
-                output_dir / f'{prefix}_mask_modifiable.tif'
-            )
-            
-            # Save subtracted components
-            fabio.tifimage.tifimage(data=series_result.sub_avg_donut).write(
-                output_dir / f'{prefix}_sub_avg_donut.tif'
-            )
-
-            fabio.tifimage.tifimage(data=series_result.sub_avg_streak).write(
-                output_dir / f'{prefix}_sub_avg_streak.tif'
-            ) 
-
-            # Save standard deviation of images
-            fabio.tifimage.tifimage(data=series_result.img_err_direct).write(
-                output_dir / f'{prefix}_std_direct.tif'
-                )
-
-            # Save standard deviation of intermediate images
-            fabio.tifimage.tifimage(data=series_result.img_err_half_clean).write(
-                output_dir / f'{prefix}_std_half_clean.tif'
-                )
-
-            # Save standard deviation of cleaned images 
-            fabio.tifimage.tifimage(data=series_result.img_err_clean).write(
-                output_dir / f'{prefix}_std_clean.tif'
-            )
-        except Exception as e:
-            logger.error(f"Failed to save results to {output_dir}: {str(e)}")
             raise
 
     def cleanup(self) -> None:
