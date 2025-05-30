@@ -211,7 +211,7 @@ class SeriesProcessor:
             if self.series_result.img_avg_binary is None:
                 raise ValueError("Binary average image not calculated")
             
-            self.series_result.mask_protect = self.series_result.img_avg_binary < self.series_config.th_mask
+            self.series_result.mask_protect = self.series_result.img_avg_binary <= self.series_config.th_mask
             logger.debug(f"Number of pixels protected as ring features: {np.sum(not self.series_result.mask_protect)}")
 
             if self.series_result.mask_modifiable is not None:

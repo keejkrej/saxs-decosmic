@@ -159,7 +159,7 @@ class SingleProcessor:
             img_orig_copy = np.copy(img_orig)
             mask_modifiable_copy = np.copy(mask_modifiable)
 
-            donut_mask = img_orig_copy > self.single_config.th_donut
+            donut_mask = img_orig_copy >= self.single_config.th_donut
             donut_mask_expanded = maximum_filter(donut_mask, size=self.single_config.exp_donut)
             mask_modified = donut_mask_expanded & mask_modifiable_copy
             img_orig_copy[mask_modified] = 0
@@ -199,7 +199,7 @@ class SingleProcessor:
             conv_kernel = np.ones((self.single_config.win_streak, self.single_config.win_streak), dtype=self.dtype)
             img_conv = convolve(img_binary, conv_kernel, mode='constant', cval=0)
             img_conv = img_conv * img_binary
-            streak_mask = img_conv > self.single_config.th_streak
+            streak_mask = img_conv >= self.single_config.th_streak
             streak_mask_expanded = maximum_filter(streak_mask, size=self.single_config.exp_streak)
             mask_modified = streak_mask_expanded & mask_modifiable_copy
             img_orig_copy[mask_modified] = 0
