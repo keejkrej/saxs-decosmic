@@ -3,6 +3,7 @@ Comment: Series image processing
 Dataclass: SeriesConfig, SeriesResult
 Class: SeriesProcessor
 """
+from copy import deepcopy
 from dataclasses import dataclass
 import logging
 import os
@@ -338,7 +339,7 @@ class SeriesProcessor:
             self._err_clean()
             logger.info('Processing finished')
 
-            return self.series_result
+            return deepcopy(self.series_result)
         except Exception as e:
             logger.error(f"Failed to process image series: {str(e)}")
             raise

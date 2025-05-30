@@ -3,6 +3,7 @@ Comment: Single image processing
 Dataclass: SingleConfig, SingleResult
 Class: SingleProcessor
 """
+from copy import deepcopy
 from dataclasses import dataclass
 import logging
 from pathlib import Path
@@ -238,7 +239,7 @@ class SingleProcessor:
             logger.debug(f"Image cleaning complete. Total modified pixels: {np.sum(self.single_result.mask_modified)}")
             logger.debug(f"Donut features removed: {np.sum(self.single_result.sub_donut)} photons, Streak features removed: {np.sum(self.single_result.sub_streak)} photons")
             
-            return self.single_result
+            return deepcopy(self.single_result)
         except Exception as e:
             logger.error(f"Failed to clean image: {e}")
             raise
