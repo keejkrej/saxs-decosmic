@@ -85,11 +85,10 @@ def main() -> None:
     
     try:
         # Load user mask if specified
+        user_mask = None
         if args.user_mask:
             user_mask = fabio.open(args.user_mask).data
             user_mask = user_mask.astype(bool)
-        else:
-            user_mask = None
         
         # Process images
         series_config = SeriesConfig(th_donut=args.th_donut,

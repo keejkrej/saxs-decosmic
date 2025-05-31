@@ -76,6 +76,21 @@ class SeriesResult:
                     value
                 )
 
+    def load(self, input_dir: str, prefix: str = '') -> None:
+        """Load the results from a file.
+        
+        Args:
+            input_path: Path to the input file
+        """
+        input_path = Path(input_dir).resolve()
+        for key, value in self.__dict__.items():
+            if value is not None:
+                file_path = input_path / f'{prefix}_{key}.tif'
+                if file_path.exists():
+                    setattr(self, key, tifffile.imread(file_path))
+                else:
+                    raise FileNotFoundError(f"File {file_path} does not exist")
+
 # =====================================================================
 # Series Processor Class
 # =====================================================================
@@ -213,7 +228,7 @@ class SeriesProcessor:
                 raise ValueError("Binary average image not calculated")
             
             self.series_result.mask_protect = self.series_result.img_avg_binary <= self.series_config.th_mask
-            logger.debug(f"Number of pixels protected as ring features: {np.sum(not self.series_result.mask_protect)}")
+            logger.debug(f"Number of pixels protected as ring features: {np.sum(1 - self.series_result.mask_protect)}")
 
             if self.series_result.mask_modifiable is not None:
                 self.series_result.mask_modifiable = self.series_result.mask_protect & self.series_result.mask_modifiable
@@ -279,7 +294,7 @@ class SeriesProcessor:
             
             img_sum_sq = np.zeros(self.shape, dtype=np.float64)
             
-            for i in tqdm(range(self.nframes), desc='Calculating standard deviation of images'):
+            for i in tqdm(range(self.nframes), desc='Calculating error of direct average'):
                 img = self._get_img(i)
                 img_sum_sq += (img - self.series_result.img_avg_direct) ** 2
                 
@@ -298,9 +313,10 @@ class SeriesProcessor:
             if self.series_result.img_avg_clean is None:
                 raise ValueError("Cleaned average not calculated")
             
-            img_sum_sq = np.zeros(self.shape, dtype=np.float64)
+            img_sum_sq_half_clean = np.zeros(self.shape, dtype=np.float64)
+            img_sum_sq_clean = np.zeros(self.shape, dtype=np.float64)
             
-            for i in tqdm(range(self.nframes), desc='Calculating standard deviation of cleaned images'):
+            for i in tqdm(range(self.nframes), desc='Calculating error of cleaned average'):
                 img = self._get_img(i)
                 processor = SingleProcessor(
                     img,
@@ -309,9 +325,16 @@ class SeriesProcessor:
                 )
                 single_result = processor.clean_img()
 
-                img_sum_sq += (single_result.img_clean - self.series_result.img_avg_clean) ** 2
+                if single_result.img_half_clean is None:
+                    raise ValueError("Half-cleaned image not calculated")
+                if single_result.img_clean is None:
+                    raise ValueError("Cleaned image not calculated")
 
-            self.series_result.img_err_clean = np.sqrt(img_sum_sq / self.nframes)
+                img_sum_sq_half_clean += (single_result.img_half_clean - self.series_result.img_avg_half_clean) ** 2
+                img_sum_sq_clean += (single_result.img_clean - self.series_result.img_avg_clean) ** 2
+
+            self.series_result.img_err_half_clean = np.sqrt(img_sum_sq_half_clean / self.nframes)
+            self.series_result.img_err_clean = np.sqrt(img_sum_sq_clean / self.nframes)
             logger.debug("Error of cleaned average calculated")
         except Exception as e:
             logger.error(f"Failed to calculate error of cleaned average: {str(e)}")
