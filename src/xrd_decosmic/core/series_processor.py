@@ -83,13 +83,12 @@ class SeriesResult:
             input_path: Path to the input file
         """
         input_path = Path(input_dir).resolve()
-        for key, value in self.__dict__.items():
-            if value is not None:
-                file_path = input_path / f'{prefix}_{key}.tif'
-                if file_path.exists():
-                    setattr(self, key, tifffile.imread(file_path))
-                else:
-                    raise FileNotFoundError(f"File {file_path} does not exist")
+        for key in self.__dict__:
+            file_path = input_path / f'{prefix}_{key}.tif'
+            if file_path.exists():
+                setattr(self, key, tifffile.imread(file_path))
+            else:
+                raise FileNotFoundError(f"File {file_path} does not exist")
 
 # =====================================================================
 # Series Processor Class
