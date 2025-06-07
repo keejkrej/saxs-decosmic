@@ -36,29 +36,29 @@ class SeriesResult:
     """Results of the series processing.
     
     Attributes:
-        img_avg_direct (np.ndarray): Direct average
-        img_avg_binary (np.ndarray): Direct average of binary images
-        img_avg_half_clean (np.ndarray): Half-cleaned average
-        img_avg_clean (np.ndarray): Cleaned average
-        sub_avg_donut (np.ndarray): Donut subtracted average
-        sub_avg_streak (np.ndarray): Streak subtracted average
+        avg_direct (np.ndarray): Direct average
+        avg_binary (np.ndarray): Direct average of binary images
+        avg_half_clean (np.ndarray): Half-cleaned average
+        avg_clean (np.ndarray): Cleaned average
+        avg_donut (np.ndarray): Donut subtracted average
+        avg_streak (np.ndarray): Streak subtracted average
         mask_protect (np.ndarray): Boolean mask to protect ring features, where True means can be modified
         mask_modifiable (np.ndarray): Logical AND of mask_user and mask_protect, where True means can be modified
-        img_err_direct (np.ndarray): Error of direct average
-        img_err_half_clean (np.ndarray): Error of half-cleaned average
-        img_err_clean (np.ndarray): Error of cleaned average
+        var_direct (np.ndarray): Variance of direct average
+        var_half_clean (np.ndarray): Variance of half-cleaned average
+        var_clean (np.ndarray): Variance of cleaned average
     """
-    img_avg_direct: np.ndarray | None = None
-    img_avg_binary: np.ndarray | None = None
+    avg_direct: np.ndarray | None = None
+    avg_binary: np.ndarray | None = None
     mask_protect: np.ndarray | None = None
     mask_modifiable: np.ndarray | None = None
-    img_avg_clean: np.ndarray | None = None
-    img_avg_half_clean: np.ndarray | None = None
-    sub_avg_donut: np.ndarray | None = None
-    sub_avg_streak: np.ndarray | None = None
-    img_err_direct: np.ndarray | None = None
-    img_err_half_clean: np.ndarray | None = None
-    img_err_clean: np.ndarray | None = None
+    avg_clean: np.ndarray | None = None
+    avg_half_clean: np.ndarray | None = None
+    avg_donut: np.ndarray | None = None
+    avg_streak: np.ndarray | None = None
+    var_direct: np.ndarray | None = None
+    var_half_clean: np.ndarray | None = None
+    var_clean: np.ndarray | None = None
 
     def save(self, output_dir: str, prefix: str = '') -> None:
         """Save the results to a file.
@@ -97,7 +97,7 @@ class SeriesResult:
 class SeriesProcessor:
     """Processes a series of images to remove high energy background.
     
-    This class implements different averaging algorithms and can calculate errors of the averages (standard deviation).
+    This class implements different averaging algorithms and can calculate variances of the averages (standard deviation).
     
     Attributes:
         config (SeriesConfig): Configuration for the series processor
@@ -199,19 +199,19 @@ class SeriesProcessor:
         This method calculates the direct average of all images and their binarization.
         """
         try:
-            img_sum_direct = np.zeros(self.shape, dtype=np.float64)
-            img_sum_binary = np.zeros(self.shape, dtype=np.float64)
+            sum_direct = np.zeros(self.shape, dtype=np.float64)
+            sum_binary = np.zeros(self.shape, dtype=np.float64)
             logger.info('Direct averaging images ...')
             
             for i in tqdm(range(self.nframes), desc='Direct-averaging images'):
                 img = self._get_img(i)
-                img_sum_direct += img
+                sum_direct += img
 
                 img_binary = (img > 0).astype(self.dtype)
-                img_sum_binary += img_binary
+                sum_binary += img_binary
             
-            self.series_result.img_avg_direct = img_sum_direct / self.nframes
-            self.series_result.img_avg_binary = img_sum_binary / self.nframes
+            self.series_result.avg_direct = sum_direct / self.nframes
+            self.series_result.avg_binary = sum_binary / self.nframes
             logger.debug("Direct-average finished")
         except Exception as e:
             logger.error(f"Direct-average failed: {str(e)}")
@@ -223,10 +223,10 @@ class SeriesProcessor:
         This method creates a mask to protect ring features by identifying pixels that appear consistently across the image series (using the binary average) and combining this with any user-specified mask regions.
         """
         try:
-            if self.series_result.img_avg_binary is None:
+            if self.series_result.avg_binary is None:
                 raise ValueError("Binary average image not calculated")
             
-            self.series_result.mask_protect = self.series_result.img_avg_binary <= self.series_config.th_mask
+            self.series_result.mask_protect = self.series_result.avg_binary <= self.series_config.th_mask
             logger.debug(f"Number of pixels protected as ring features: {np.sum(1 - self.series_result.mask_protect)}")
 
             if self.series_result.mask_modifiable is not None:
@@ -249,10 +249,10 @@ class SeriesProcessor:
             if self.series_result.mask_modifiable is None:
                 raise ValueError("Modifiable mask not calculated")
             
-            img_sum_half_clean = np.zeros(self.shape, dtype=np.float64)
-            img_sum_clean = np.zeros(self.shape, dtype=np.float64)
-            sub_sum_donut = np.zeros(self.shape, dtype=np.float64)
-            sub_sum_streak = np.zeros(self.shape, dtype=np.float64)
+            sum_half_clean = np.zeros(self.shape, dtype=np.float64)
+            sum_clean = np.zeros(self.shape, dtype=np.float64)
+            sum_donut = np.zeros(self.shape, dtype=np.float64)
+            sum_streak = np.zeros(self.shape, dtype=np.float64)
             num_half_clean = np.ones(self.shape, dtype=np.int32) * self.nframes
             num_clean = np.ones(self.shape, dtype=np.int32) * self.nframes
             
@@ -266,56 +266,56 @@ class SeriesProcessor:
                 )
                 single_result = processor.clean_img()
                 
-                img_sum_half_clean += single_result.img_half_clean
-                img_sum_clean += single_result.img_clean
-                sub_sum_donut += single_result.sub_donut
-                sub_sum_streak += single_result.sub_streak
+                sum_half_clean += single_result.img_half_clean
+                sum_clean += single_result.img_clean
+                sum_donut += single_result.sub_donut
+                sum_streak += single_result.sub_streak
                 num_half_clean -= single_result.mask_donut
-                num_clean -= single_result.mask_modified
+                num_clean -= single_result.mask_combined
             
-            self.series_result.img_avg_half_clean = np.divide(img_sum_half_clean, num_half_clean, out=np.zeros_like(img_sum_half_clean), where=num_half_clean != 0)
-            self.series_result.img_avg_clean = np.divide(img_sum_clean, num_clean, out=np.zeros_like(img_sum_clean), where=num_clean != 0)
-            self.series_result.sub_avg_donut = sub_sum_donut / self.nframes
-            self.series_result.sub_avg_streak = sub_sum_streak / self.nframes
+            self.series_result.avg_half_clean = np.divide(sum_half_clean, num_half_clean, out=np.zeros_like(sum_half_clean), where=num_half_clean != 0)
+            self.series_result.avg_clean = np.divide(sum_clean, num_clean, out=np.zeros_like(sum_clean), where=num_clean != 0)
+            self.series_result.avg_donut = sum_donut / self.nframes
+            self.series_result.avg_streak = sum_streak / self.nframes
             logger.debug("Cleaning finished")
         except Exception as e:
             logger.error(f"Cleaning failed: {str(e)}")
             raise
 
-    def _err_direct(self) -> None:
-        """Calculate error of direct average.
+    def _var_direct(self) -> None:
+        """Calculate variance of direct average.
         
-        This method calculates the error of direct average.
+        This method calculates the variance of direct average.
         """
         try:
-            if self.series_result.img_avg_direct is None:
+            if self.series_result.avg_direct is None:
                 raise ValueError("Direct average not calculated")
             
-            img_sum_sq = np.zeros(self.shape, dtype=np.float64)
+            sum_sq = np.zeros(self.shape, dtype=np.float64)
             
-            for i in tqdm(range(self.nframes), desc='Calculating error of direct average'):
+            for i in tqdm(range(self.nframes), desc='Calculating variance of direct average'):
                 img = self._get_img(i)
-                img_sum_sq += (img - self.series_result.img_avg_direct) ** 2
+                sum_sq += (img - self.series_result.avg_direct) ** 2
                 
-            self.series_result.img_err_direct = np.sqrt(img_sum_sq / self.nframes)
-            logger.debug("Error of direct average calculated")
+            self.series_result.var_direct = sum_sq / self.nframes
+            logger.debug("Variance of direct average calculated")
         except Exception as e:
-            logger.error(f"Failed to calculate error of direct average: {str(e)}")
+            logger.error(f"Failed to calculate variance of direct average: {str(e)}")
             raise
 
-    def _err_clean(self) -> None:
-        """Calculate error of cleaned average.
+    def _var_clean(self) -> None:
+        """Calculate variance of cleaned average.
         
-        This method calculates the error of cleaned average.
+        This method calculates the variance of cleaned average.
         """
         try:
-            if self.series_result.img_avg_clean is None:
+            if self.series_result.avg_clean is None:
                 raise ValueError("Cleaned average not calculated")
             
-            img_sum_sq_half_clean = np.zeros(self.shape, dtype=np.float64)
-            img_sum_sq_clean = np.zeros(self.shape, dtype=np.float64)
+            sum_sq_half_clean = np.zeros(self.shape, dtype=np.float64)
+            sum_sq_clean = np.zeros(self.shape, dtype=np.float64)
             
-            for i in tqdm(range(self.nframes), desc='Calculating error of cleaned average'):
+            for i in tqdm(range(self.nframes), desc='Calculating variance of cleaned average'):
                 img = self._get_img(i)
                 processor = SingleProcessor(
                     img,
@@ -329,14 +329,14 @@ class SeriesProcessor:
                 if single_result.img_clean is None:
                     raise ValueError("Cleaned image not calculated")
 
-                img_sum_sq_half_clean += (single_result.img_half_clean - self.series_result.img_avg_half_clean) ** 2
-                img_sum_sq_clean += (single_result.img_clean - self.series_result.img_avg_clean) ** 2
+                sum_sq_half_clean += (single_result.img_half_clean - self.series_result.avg_half_clean) ** 2
+                sum_sq_clean += (single_result.img_clean - self.series_result.avg_clean) ** 2
 
-            self.series_result.img_err_half_clean = np.sqrt(img_sum_sq_half_clean / self.nframes)
-            self.series_result.img_err_clean = np.sqrt(img_sum_sq_clean / self.nframes)
-            logger.debug("Error of cleaned average calculated")
+            self.series_result.var_half_clean = sum_sq_half_clean / self.nframes
+            self.series_result.var_clean = sum_sq_clean / self.nframes
+            logger.debug("Variance of cleaned average calculated")
         except Exception as e:
-            logger.error(f"Failed to calculate error of cleaned average: {str(e)}")
+            logger.error(f"Failed to calculate variance of cleaned average: {str(e)}")
             raise
         
     # =====================================================================
@@ -348,17 +348,17 @@ class SeriesProcessor:
         
         This method orchestrates the complete processing workflow:
         1. Calculate direct average of all images
-        2. Calculate error of direct average
+        2. Calculate variance of direct average
         3. Generate combined mask for valid pixels
         4. Process images to remove high energy background and calculate averages
-        5. Calculate error of cleaned average
+        5. Calculate variance of cleaned average
         """
         try:
             self._avg_direct()
-            self._err_direct()
+            self._var_direct()
             self._mask()
             self._avg_clean()
-            self._err_clean()
+            self._var_clean()
             logger.info('Processing finished')
 
             return deepcopy(self.series_result)

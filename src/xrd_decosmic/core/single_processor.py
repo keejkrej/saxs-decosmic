@@ -47,7 +47,7 @@ class SingleResult:
         mask_modifiable (np.ndarray): External mask for modifiable pixels, where True means can be modified
         mask_donut (np.ndarray): Mask for donut removal
         mask_streak (np.ndarray): Mask for streak removal
-        mask_modifiable (np.ndarray): Combined modification mask
+        mask_combined (np.ndarray): Combined modification mask
         sub_donut (np.ndarray): Subtracted donut artifacts
         sub_streak (np.ndarray): Subtracted streak artifacts
     """
@@ -57,7 +57,7 @@ class SingleResult:
     mask_modifiable: np.ndarray | None = None
     mask_donut: np.ndarray | None = None
     mask_streak: np.ndarray | None = None
-    mask_modified: np.ndarray | None = None
+    mask_combined: np.ndarray | None = None
     sub_donut: np.ndarray | None = None
     sub_streak: np.ndarray | None = None
 
@@ -246,11 +246,11 @@ class SingleProcessor:
             self.single_result.img_half_clean, self.single_result.mask_donut = self._de_donut(self.single_result.img_orig, self.single_result.mask_modifiable)
             self.single_result.img_clean, self.single_result.mask_streak = self._de_streak(self.single_result.img_half_clean, self.single_result.mask_modifiable)
             
-            self.single_result.mask_modified = self.single_result.mask_donut | self.single_result.mask_streak
+            self.single_result.mask_combined = self.single_result.mask_donut | self.single_result.mask_streak
             self.single_result.sub_donut = self.single_result.img_orig - self.single_result.img_half_clean
             self.single_result.sub_streak = self.single_result.img_half_clean - self.single_result.img_clean
             
-            logger.debug(f"Image cleaning complete. Total modified pixels: {np.sum(self.single_result.mask_modified)}")
+            logger.debug(f"Image cleaning complete. Total modified pixels: {np.sum(self.single_result.mask_combined)}")
             logger.debug(f"Donut features removed: {np.sum(self.single_result.sub_donut)} photons, Streak features removed: {np.sum(self.single_result.sub_streak)} photons")
             
             return deepcopy(self.single_result)
