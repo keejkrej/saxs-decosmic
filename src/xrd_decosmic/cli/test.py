@@ -1,6 +1,4 @@
-"""
-Modified to process a single image using SingleProcessor and plot results.
-"""
+"""Single image processing test module for debugging and visualization."""
 import argparse
 import logging
 import sys
@@ -14,7 +12,7 @@ from ..core.single_processor import SingleProcessor, SingleConfig, SingleResult
 # =====================================================================
 
 def parse_args():
-    """Parse CLI arguments for single-image processing."""
+    """Parse command-line arguments for single image processing."""
     parser = argparse.ArgumentParser(description='Process a single image with decosmic.')
     parser.add_argument('--input', required=True, help='Path to the input image')
     parser.add_argument('--output', help='Directory to save results (optional)')
@@ -43,7 +41,7 @@ def parse_args():
 # =====================================================================
 
 def plot_results(result: SingleResult) -> None:
-    """Plot the original, cleaned, and masked images."""
+    """Plot original, cleaned and masked images in a 2x3 subplot layout."""
     fig, axes = plt.subplots(2, 3, figsize=(15, 8))
     
     # Original image
@@ -63,7 +61,7 @@ def plot_results(result: SingleResult) -> None:
     axes[1, 0].set_title('Streak Mask')
     
     # Combined modification mask
-    axes[1, 1].imshow(result.mask_modified, cmap='gray')
+    axes[1, 1].imshow(result.mask_combined, cmap='gray')
     axes[1, 1].set_title('Combined Mask')
     
     # Subtracted artifacts (donut + streak)
@@ -79,7 +77,7 @@ def plot_results(result: SingleResult) -> None:
 # =====================================================================
 
 def main() -> None:
-    """Process a single image and plot results."""
+    """Process a single image and display results with optional saving."""
     args = parse_args()
 
     # Configure logging

@@ -1,6 +1,4 @@
-"""
-Comment: Main entry point for the CLI application.
-"""
+"""Main CLI entry point for the XRD Decosmic application."""
 import argparse
 import logging
 import sys
@@ -14,14 +12,7 @@ from ..core.single_processor import SingleProcessor, SingleConfig, SingleResult
 # =====================================================================
 
 def parse_args():
-    """Create and configure the argument parser.
-    
-    This function sets up the argument parser with all required and optional
-    command-line arguments needed for decosmic.
-    
-    Returns:
-        argparse.ArgumentParser: Configured parser with all arguments defined
-    """
+    """Create and configure the argument parser for command-line interface."""
     parser = argparse.ArgumentParser(description='Remove high-energy background from 2D images using decosmic')
     
     # Required arguments
@@ -59,19 +50,7 @@ def parse_args():
 # =====================================================================
 
 def main() -> None:
-    """Main entry point for the CLI application.
-    
-    This function orchestrates the entire processing workflow:
-    1. Parse command-line arguments
-    2. Load and validate parameters
-    3. Load user mask if specified
-    4. Process the image series
-    5. Save results
-    6. Clean up resources
-    
-    The function handles errors gracefully and provides appropriate
-    error messages to the user.
-    """
+    """Main entry point orchestrating argument parsing, image processing and result saving."""
     args = parse_args()
 
     # Configure logging

@@ -1,8 +1,4 @@
-"""
-Comment: Single image processing
-Dataclass: SingleConfig, SingleResult
-Class: SingleProcessor
-"""
+"""Single image processing module with SingleConfig, SingleResult dataclasses and SingleProcessor class."""
 from copy import deepcopy
 from dataclasses import dataclass
 import logging
@@ -21,15 +17,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SingleConfig:
-    """Configuration for SingleProcessor.
-    
-    Attributes:
-        th_donut (int): Threshold for de-donut
-        th_streak (int): Threshold for de-streak
-        win_streak (int): Window size for de-streak
-        exp_donut (int): Expansion of mask for de-donut
-        exp_streak (int): Expansion of mask for de-streak
-    """
+    """Configuration parameters for SingleProcessor."""
     th_donut: int
     th_streak: int
     win_streak: int
@@ -38,19 +26,7 @@ class SingleConfig:
 
 @dataclass
 class SingleResult:
-    """Results of the image processing.
-    
-    Attributes:
-        img_orig (np.ndarray): Input image
-        img_half_clean (np.ndarray): Half-cleaned image after donut removal
-        img_clean (np.ndarray): Cleaned image after both donut and streak removal
-        mask_modifiable (np.ndarray): External mask for modifiable pixels, where True means can be modified
-        mask_donut (np.ndarray): Mask for donut removal
-        mask_streak (np.ndarray): Mask for streak removal
-        mask_combined (np.ndarray): Combined modification mask
-        sub_donut (np.ndarray): Subtracted donut artifacts
-        sub_streak (np.ndarray): Subtracted streak artifacts
-    """
+    """Results container for single image processing with original, cleaned images and masks."""
     img_orig: np.ndarray
     img_half_clean: np.ndarray | None = None
     img_clean: np.ndarray | None = None
@@ -62,11 +38,7 @@ class SingleResult:
     sub_streak: np.ndarray | None = None
 
     def save(self, output_dir: str, prefix: str = '') -> None:
-        """Save the results to a file.
-        
-        Args:
-            output_path: Path to the output file
-        """
+        """Save all result arrays as TIFF files in the specified directory."""
         output_path = Path(output_dir).resolve()
         output_path.mkdir(parents=True, exist_ok=True)
         
@@ -78,11 +50,7 @@ class SingleResult:
                 )
 
     def load(self, input_dir: str, prefix: str = '') -> None:
-        """Load the results from a file.
-        
-        Args:
-            input_path: Path to the input file
-        """
+        """Load all result arrays from TIFF files in the specified directory."""
         input_path = Path(input_dir).resolve()
         for key in self.__dict__:
             file_path = input_path / f'{prefix}_{key}.tif'
@@ -96,16 +64,7 @@ class SingleResult:
 # =====================================================================
 
 class SingleProcessor:
-    """Processes a single image to remove high energy background.
-    
-    This class implements de-donut and de-streak algorithms for donut-shaped and streak-shaped features.
-    
-    Attributes:
-        single_config (SingleConfig): Configuration for the single image processor
-        result (SingleResult): Results of the single image processing
-        shape (Tuple[int, int]): Shape of the image
-        dtype (np.dtype): Data type of the image
-    """
+    """Processes single images to remove high energy background using de-donut and de-streak algorithms."""
 
     # =====================================================================
     # Initialization
@@ -115,12 +74,7 @@ class SingleProcessor:
                  img_orig: np.ndarray,
                  single_config: SingleConfig,
                  mask_modifiable: np.ndarray | None = None) -> None:
-        """Initialize the image processor.
-        
-        Args:
-            img: Input image data as numpy array
-            mask: External mask for modifiable pixels, where True means can be modified
-        """
+        """Initialize the image processor with input image, configuration and optional mask."""
         try:
             if not isinstance(img_orig, np.ndarray):
                 raise TypeError("Input image must be a numpy array")
@@ -150,17 +104,7 @@ class SingleProcessor:
     # =====================================================================
 
     def _de_donut(self, img_orig: np.ndarray, mask_modifiable: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Remove donut-shaped features.
-        
-        Args:
-            img: Input image as numpy array
-            mask: External mask for modifiable pixels, where True means can be modified
-            
-        Returns:
-            Tuple containing:
-                - Cleaned image with donut features removed
-                - Modification mask indicating removed pixels
-        """
+        """Remove donut-shaped features using threshold-based detection and morphological expansion."""
         try:
             if self.single_config is None:
                 raise ValueError("Configuration is not set")
@@ -185,17 +129,7 @@ class SingleProcessor:
             raise
     
     def _de_streak(self, img_orig: np.ndarray, mask_modifiable: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Remove streak-shaped features.
-        
-        Args:
-            img: Input image as numpy array
-            mask: External mask for modifiable pixels, where True means can be modified
-            
-        Returns:
-            Tuple containing:
-                - Cleaned image with streak features removed
-                - Modification mask indicating removed pixels
-        """
+        """Remove streak-shaped features using convolution-based detection and morphological expansion."""
         try:
             if self.single_config is None:
                 raise ValueError("Configuration is not set")
@@ -229,14 +163,7 @@ class SingleProcessor:
     # =====================================================================
 
     def clean_img(self) -> SingleResult:
-        """Clean the image by removing high energy background.
-        
-        This method processes the image in two steps:
-        1. Remove donut-shaped features
-        2. Remove streak-shaped features
-        
-        The results are stored in the self.result object.
-        """
+        """Clean the image by sequentially removing donut-shaped and streak-shaped features."""
         try:
             if self.single_result.img_orig is None or self.single_result.mask_modifiable is None:
                 raise ValueError("Image and mask must be set before cleaning")
@@ -250,10 +177,8 @@ class SingleProcessor:
             self.single_result.sub_donut = self.single_result.img_orig - self.single_result.img_half_clean
             self.single_result.sub_streak = self.single_result.img_half_clean - self.single_result.img_clean
             
-            logger.debug(f"Image cleaning complete. Total modified pixels: {np.sum(self.single_result.mask_combined)}")
-            logger.debug(f"Donut features removed: {np.sum(self.single_result.sub_donut)} photons, Streak features removed: {np.sum(self.single_result.sub_streak)} photons")
-            
-            return deepcopy(self.single_result)
+            logger.debug("Image cleaning process completed successfully")
+            return self.single_result
         except Exception as e:
-            logger.error(f"Failed to clean image: {e}")
+            logger.error(f"Image cleaning failed: {e}")
             raise

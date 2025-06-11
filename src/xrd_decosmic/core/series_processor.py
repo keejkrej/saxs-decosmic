@@ -1,8 +1,4 @@
-"""
-Comment: Series image processing
-Dataclass: SeriesConfig, SeriesResult
-Class: SeriesProcessor
-"""
+"""Series image processing module with SeriesConfig, SeriesResult dataclasses and SeriesProcessor class."""
 from copy import deepcopy
 from dataclasses import dataclass
 import logging
@@ -24,30 +20,12 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SeriesConfig(SingleConfig):
-    """Configuration for SeriesProcessor.
-    
-    Attributes:
-        th_mask (float): Threshold for creating mask_protect
-    """
+    """Configuration parameters for SeriesProcessor extending SingleConfig."""
     th_mask: float
 
 @dataclass
 class SeriesResult:
-    """Results of the series processing.
-    
-    Attributes:
-        avg_direct (np.ndarray): Direct average
-        avg_binary (np.ndarray): Direct average of binary images
-        avg_half_clean (np.ndarray): Half-cleaned average
-        avg_clean (np.ndarray): Cleaned average
-        avg_donut (np.ndarray): Donut subtracted average
-        avg_streak (np.ndarray): Streak subtracted average
-        mask_protect (np.ndarray): Boolean mask to protect ring features, where True means can be modified
-        mask_modifiable (np.ndarray): Logical AND of mask_user and mask_protect, where True means can be modified
-        var_direct (np.ndarray): Variance of direct average
-        var_half_clean (np.ndarray): Variance of half-cleaned average
-        var_clean (np.ndarray): Variance of cleaned average
-    """
+    """Results container for series processing with averages, variances and masks."""
     avg_direct: np.ndarray | None = None
     avg_binary: np.ndarray | None = None
     mask_protect: np.ndarray | None = None
@@ -61,11 +39,7 @@ class SeriesResult:
     var_clean: np.ndarray | None = None
 
     def save(self, output_dir: str, prefix: str = '') -> None:
-        """Save the results to a file.
-        
-        Args:
-            output_path: Path to the output file
-        """
+        """Save all result arrays as TIFF files in the specified directory."""
         output_path = Path(output_dir).resolve()
         output_path.mkdir(parents=True, exist_ok=True)
         
@@ -77,11 +51,7 @@ class SeriesResult:
                 )
 
     def load(self, input_dir: str, prefix: str = '') -> None:
-        """Load the results from a file.
-        
-        Args:
-            input_path: Path to the input file
-        """
+        """Load all result arrays from TIFF files in the specified directory."""
         input_path = Path(input_dir).resolve()
         for key in self.__dict__:
             file_path = input_path / f'{prefix}_{key}.tif'
@@ -95,18 +65,7 @@ class SeriesResult:
 # =====================================================================
 
 class SeriesProcessor:
-    """Processes a series of images to remove high energy background.
-    
-    This class implements different averaging algorithms and can calculate variances of the averages (standard deviation).
-    
-    Attributes:
-        config (SeriesConfig): Configuration for the series processor
-        result (SeriesResult): Results of the series processing
-        img_series (ImageSeries): Image series object for managing the collection of images
-        nframes (int): Number of frames in the series
-        shape (Tuple[int, int]): Shape of the images
-        dtype (np.dtype): Data type of the images
-    """
+    """Processes image series to remove high energy background with averaging algorithms and variance calculation."""
     
     # =====================================================================
     # Initialization
@@ -118,14 +77,7 @@ class SeriesProcessor:
                 mask_modifiable: np.ndarray | None = None,
                 use_fabio: bool = False
                 ) -> None:
-        """Initialize the processor.
-        
-        Args:
-            first_filename: Path to the first image or directory containing images
-            series_config: Configuration for the series processor
-            mask_modifiable: User-defined mask for modifiable pixels, where True means can be modified
-            use_fabio: Whether to use fabio.open_series instead of manual loading
-        """
+        """Initialize the processor with first filename, configuration, optional mask and fabio usage flag."""
         try:
             self.series_result = SeriesResult(
                 mask_modifiable=mask_modifiable
@@ -147,12 +99,7 @@ class SeriesProcessor:
     # =====================================================================
 
     def _load_images(self, first_filename: str, use_fabio: bool = False) -> None:
-        """Load images from a file.
-        
-        Args:
-            first_filename: Path to the first image of the series
-            use_fabio: Whether to use fabio.open_series instead of manual loading
-        """
+        """Load images from file series using the ImageSeries factory."""
         try:
             logger.info(f"Loading images from {first_filename} ...")
             
@@ -175,14 +122,7 @@ class SeriesProcessor:
             raise
 
     def _get_img(self, idx: int) -> np.ndarray:
-        """Get a single image from the series.
-        
-        Args:
-            idx: Index of the image to retrieve
-            
-        Returns:
-            np.ndarray: Preprocessed image as numpy array
-        """
+        """Get a single preprocessed image from the series with outlier value handling."""
         try:
             img = self.img_series.get_frame(idx)
             img[img>10000] = 0 # Big values are set to 0
@@ -194,10 +134,7 @@ class SeriesProcessor:
             raise
     
     def _avg_direct(self) -> None:
-        """Calculate direct average
-        
-        This method calculates the direct average of all images and their binarization.
-        """
+        """Calculate direct average of all images and their binary representations."""
         try:
             sum_direct = np.zeros(self.shape, dtype=np.float64)
             sum_binary = np.zeros(self.shape, dtype=np.float64)
@@ -218,10 +155,7 @@ class SeriesProcessor:
             raise
 
     def _mask(self) -> None:
-        """Create protect mask for ring features.
-        
-        This method creates a mask to protect ring features by identifying pixels that appear consistently across the image series (using the binary average) and combining this with any user-specified mask regions.
-        """
+        """Create protection mask for ring features based on binary average threshold."""
         try:
             if self.series_result.avg_binary is None:
                 raise ValueError("Binary average image not calculated")
@@ -240,11 +174,7 @@ class SeriesProcessor:
             raise
 
     def _avg_clean(self) -> None:
-        """Process all images to remove high energy background.
-        
-        This method processes all images in the series to remove high energy background
-        and calculates various averages and differences.
-        """
+        """Process all images to remove high energy background and calculate cleaned averages."""
         try:
             if self.series_result.mask_modifiable is None:
                 raise ValueError("Modifiable mask not calculated")
@@ -266,56 +196,59 @@ class SeriesProcessor:
                 )
                 single_result = processor.clean_img()
                 
-                sum_half_clean += single_result.img_half_clean
-                sum_clean += single_result.img_clean
-                sum_donut += single_result.sub_donut
-                sum_streak += single_result.sub_streak
-                num_half_clean -= single_result.mask_donut
-                num_clean -= single_result.mask_combined
+                if single_result.img_half_clean is not None:
+                    sum_half_clean += single_result.img_half_clean
+                if single_result.img_clean is not None:
+                    sum_clean += single_result.img_clean
+                if single_result.sub_donut is not None:
+                    sum_donut += single_result.sub_donut
+                if single_result.sub_streak is not None:
+                    sum_streak += single_result.sub_streak
+                if single_result.mask_donut is not None:
+                    num_half_clean -= single_result.mask_donut.astype(np.int32)
+                if single_result.mask_combined is not None:
+                    num_clean -= single_result.mask_combined.astype(np.int32)
             
             self.series_result.avg_half_clean = np.divide(sum_half_clean, num_half_clean, out=np.zeros_like(sum_half_clean), where=num_half_clean != 0)
             self.series_result.avg_clean = np.divide(sum_clean, num_clean, out=np.zeros_like(sum_clean), where=num_clean != 0)
             self.series_result.avg_donut = sum_donut / self.nframes
             self.series_result.avg_streak = sum_streak / self.nframes
-            logger.debug("Cleaning finished")
+            logger.debug("Clean-average finished")
         except Exception as e:
-            logger.error(f"Cleaning failed: {str(e)}")
+            logger.error(f"Clean-average failed: {str(e)}")
             raise
 
     def _var_direct(self) -> None:
-        """Calculate variance of direct average.
-        
-        This method calculates the variance of direct average.
-        """
+        """Calculate variance of direct average across all images."""
         try:
             if self.series_result.avg_direct is None:
                 raise ValueError("Direct average not calculated")
             
-            sum_sq = np.zeros(self.shape, dtype=np.float64)
+            sum_variance = np.zeros(self.shape, dtype=np.float64)
+            logger.info('Calculating direct variance ...')
             
-            for i in tqdm(range(self.nframes), desc='Calculating variance of direct average'):
+            for i in tqdm(range(self.nframes), desc='Calculating direct variance'):
                 img = self._get_img(i)
-                sum_sq += (img - self.series_result.avg_direct) ** 2
-                
-            self.series_result.var_direct = sum_sq / self.nframes
-            logger.debug("Variance of direct average calculated")
+                diff = img - self.series_result.avg_direct
+                sum_variance += diff ** 2
+            
+            self.series_result.var_direct = sum_variance / self.nframes
+            logger.debug("Direct-variance calculated")
         except Exception as e:
-            logger.error(f"Failed to calculate variance of direct average: {str(e)}")
+            logger.error(f"Direct-variance calculation failed: {str(e)}")
             raise
 
     def _var_clean(self) -> None:
-        """Calculate variance of cleaned average.
-        
-        This method calculates the variance of cleaned average.
-        """
+        """Calculate variance of cleaned average across all processed images."""
         try:
-            if self.series_result.avg_clean is None:
-                raise ValueError("Cleaned average not calculated")
+            if self.series_result.avg_clean is None or self.series_result.mask_modifiable is None:
+                raise ValueError("Clean average or modifiable mask not calculated")
             
-            sum_sq_half_clean = np.zeros(self.shape, dtype=np.float64)
-            sum_sq_clean = np.zeros(self.shape, dtype=np.float64)
+            sum_variance_half_clean = np.zeros(self.shape, dtype=np.float64)
+            sum_variance_clean = np.zeros(self.shape, dtype=np.float64)
+            logger.info('Calculating clean variance ...')
             
-            for i in tqdm(range(self.nframes), desc='Calculating variance of cleaned average'):
+            for i in tqdm(range(self.nframes), desc='Calculating clean variance'):
                 img = self._get_img(i)
                 processor = SingleProcessor(
                     img,
@@ -323,54 +256,56 @@ class SeriesProcessor:
                     self.series_result.mask_modifiable
                 )
                 single_result = processor.clean_img()
-
-                if single_result.img_half_clean is None:
-                    raise ValueError("Half-cleaned image not calculated")
-                if single_result.img_clean is None:
-                    raise ValueError("Cleaned image not calculated")
-
-                sum_sq_half_clean += (single_result.img_half_clean - self.series_result.avg_half_clean) ** 2
-                sum_sq_clean += (single_result.img_clean - self.series_result.avg_clean) ** 2
-
-            self.series_result.var_half_clean = sum_sq_half_clean / self.nframes
-            self.series_result.var_clean = sum_sq_clean / self.nframes
-            logger.debug("Variance of cleaned average calculated")
+                
+                if single_result.img_half_clean is not None and self.series_result.avg_half_clean is not None:
+                    diff_half_clean = single_result.img_half_clean - self.series_result.avg_half_clean
+                    sum_variance_half_clean += diff_half_clean ** 2
+                
+                if single_result.img_clean is not None and self.series_result.avg_clean is not None:
+                    diff_clean = single_result.img_clean - self.series_result.avg_clean
+                    sum_variance_clean += diff_clean ** 2
+            
+            self.series_result.var_half_clean = sum_variance_half_clean / self.nframes
+            self.series_result.var_clean = sum_variance_clean / self.nframes
+            logger.debug("Clean-variance calculated")
         except Exception as e:
-            logger.error(f"Failed to calculate variance of cleaned average: {str(e)}")
+            logger.error(f"Clean-variance calculation failed: {str(e)}")
             raise
-        
+
     # =====================================================================
     # Public Methods
     # =====================================================================
 
     def process_series(self) -> SeriesResult:
-        """Main processing pipeline for decosmic.
-        
-        This method orchestrates the complete processing workflow:
-        1. Calculate direct average of all images
-        2. Calculate variance of direct average
-        3. Generate combined mask for valid pixels
-        4. Process images to remove high energy background and calculate averages
-        5. Calculate variance of cleaned average
-        """
+        """Execute the complete series processing pipeline including averaging, masking and variance calculation."""
         try:
-            self._avg_direct()
-            self._var_direct()
-            self._mask()
-            self._avg_clean()
-            self._var_clean()
-            logger.info('Processing finished')
+            logger.info("Starting series processing pipeline")
 
-            return deepcopy(self.series_result)
+            # Step 1: Calculate direct average and binary average
+            self._avg_direct()
+
+            # Step 2: Create protection mask
+            self._mask()
+
+            # Step 3: Calculate clean average  
+            self._avg_clean()
+
+            # Step 4: Calculate variances
+            self._var_direct()
+            self._var_clean()
+
+            logger.info("Series processing pipeline completed successfully")
+            return self.series_result
         except Exception as e:
-            logger.error(f"Failed to process image series: {str(e)}")
+            logger.error(f"Series processing pipeline failed: {str(e)}")
             raise
 
     def cleanup(self) -> None:
-        """Clean up resources when the processor is deleted."""
-        try:
-            if hasattr(self, 'img_series'):
-                self.img_series.cleanup()
-        except Exception as e:
-            logger.error(f"Failed to cleanup resources: {str(e)}")
-            raise
+        """Clean up image series resources when the processor is deleted."""
+        if hasattr(self, 'img_series'):
+            self.img_series.cleanup()
+            logger.debug("SeriesProcessor resources cleaned up")
+
+    def __del__(self):
+        """Automatically clean up resources when the processor is deleted."""
+        self.cleanup()
