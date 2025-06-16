@@ -178,7 +178,7 @@ class SingleProcessor:
             self.single_result.sub_streak = self.single_result.img_half_clean - self.single_result.img_clean
             
             logger.debug("Image cleaning process completed successfully")
-            return self.single_result
+            return deepcopy(self.single_result)
         except Exception as e:
             logger.error(f"Image cleaning failed: {e}")
             raise

@@ -295,7 +295,7 @@ class SeriesProcessor:
             self._var_clean()
 
             logger.info("Series processing pipeline completed successfully")
-            return self.series_result
+            return deepcopy(self.series_result)
         except Exception as e:
             logger.error(f"Series processing pipeline failed: {str(e)}")
             raise

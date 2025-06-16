@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "xrd-decosmic"
-version = "1.2.0"
-description = "Cosmic background removal from XRD 2d image"
+version = "2.0.0"
+description = "High energy background removal from XRD 2d image"
 authors = [
     { name = "Tianyi Cao", email = "ctyjackcao@outlook.com" }
 ]
@@ -16,6 +16,7 @@ dependencies = [
     "tqdm==4.67.1",
     "tifffile==2025.5.10",
     "pyfai==2025.3.0",
+    "pandas==2.3.0"
 ]
 requires-python = ">=3.12,<3.13"
 readme = "README.md"

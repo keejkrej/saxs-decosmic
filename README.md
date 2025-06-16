@@ -12,14 +12,6 @@ pip install -e .
 
 ## Usage
 
-```bash
-python -m xrd_decosmic.cli \
---input /path/to/first_filename.tif \
---output /path/to/output/ \
---th-donut 15 \
---th-mask 0.05 \
---th-streak 3 \
---win-streak 3 \
---exp-donut 9 \
---exp-streak 3
-```
+- activate your python environment in which the program is installed
+- copy [process.py](scripts/process.py) to your folder
+- change **RAW_FOLDER**, **SAVE_FOLDER**, **SAVE_NAME_PREFIX**, **series_config** accordingly and run

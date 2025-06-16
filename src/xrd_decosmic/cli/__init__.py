@@ -1,1 +1,0 @@
-"""Command-line interface package for XRD Decosmic cosmic ray removal tool.""" 
