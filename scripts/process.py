@@ -1,41 +1,62 @@
-# Script to process a series of XRD images using the SeriesProcessor pipeline
+"""
+Process a series of XRD images using the SeriesProcessor pipeline.
+"""
+
+import logging
 from pathlib import Path
 from xrd_decosmic.core.series_processor import SeriesProcessor, SeriesConfig
 
-# === Configuration ===
-# Folder containing raw .tif images to process
-RAW_FOLDER = "data/raw"
-# Folder where processed results will be saved
-SAVE_FOLDER = "data/processed"
-# Prefix for output file names
-SAVE_NAME_PREFIX = "popc"
+# Parameters
+RAW_FOLDER = "data/raw"           # Raw .tif images folder
+SAVE_FOLDER = "data/processed"    # Output folder
+SAVE_NAME_PREFIX = "popc"         # Output file prefix
 
-# === Discover input files ===
-# Find all .tif files in the raw folder, sorted alphabetically
-raw_files = sorted(list(Path(RAW_FOLDER).expanduser().glob("*.tif")))
+TH_DONUT = 15
+TH_MASK = 0.05
+TH_STREAK = 3
+WIN_STREAK = 3
+EXP_DONUT = 9
+EXP_STREAK = 3
 
-# === Set up processing configuration ===
-# SeriesConfig extends SingleConfig and adds th_mask for mask thresholding
+LOG_LEVEL = logging.INFO           # Set to logging.DEBUG for verbose output
+
+# Logging setup
+logging.basicConfig(level=LOG_LEVEL, format='%(message)s')
+logger = logging.getLogger("xrd_decosmic.scripts.process")
+
+# Input checks
+raw_path = Path(RAW_FOLDER).resolve()
+if not raw_path.exists() or not raw_path.is_dir():
+    logger.error(f"Raw folder not found: {RAW_FOLDER}")
+    exit(1)
+
+raw_files = sorted(list(raw_path.glob("*.tif")))
+if not raw_files:
+    logger.error(f"No .tif files found in: {RAW_FOLDER}")
+    exit(1)
+
+# Processing configuration
 series_config = SeriesConfig(
-    th_donut=15,      # Threshold for donut feature removal
-    th_mask=0.05,     # Threshold for binary average mask (fraction of frames)
-    th_streak=3,      # Threshold for streak feature removal
-    win_streak=3,     # Window size for streak detection
-    exp_donut=9,      # Expansion size for donut mask
-    exp_streak=3      # Expansion size for streak mask
+    th_donut=TH_DONUT,
+    th_mask=TH_MASK,
+    th_streak=TH_STREAK,
+    win_streak=WIN_STREAK,
+    exp_donut=EXP_DONUT,
+    exp_streak=EXP_STREAK
 )
 
-# === Initialize processor ===
-# Only the first file is needed to initialize; the processor will find the rest
+# Initialize processor
+logger.info(f"Initializing processor with first file: {raw_files[0]}")
 processor = SeriesProcessor(
-    str(raw_files[0]),   # Path to the first image in the series
-    series_config,       # Processing configuration
+    str(raw_files[0]),
+    series_config,
 )
 
-# === Run the processing pipeline ===
-# This will perform averaging, masking, cleaning, and variance calculations
+# Run processing pipeline
+logger.info("Processing image series...")
 series_result = processor.process_series()
 
-# === Save results ===
-# All result arrays will be saved as TIFF files in the output directory
+# Save results
+logger.info(f"Saving results to: {SAVE_FOLDER} (prefix: {SAVE_NAME_PREFIX})")
 series_result.save(SAVE_FOLDER, SAVE_NAME_PREFIX)
+logger.info("Processing complete.")
