@@ -35,10 +35,10 @@ else:
     # Loop over each tif file and plot
     for tif_file in tif_files:
         logger.info(f"Processing: {tif_file.name}")
-        img = tifffile.imread(tif_file)
+        img = tifffile.imread(tif_file).astype(np.float64)
         # Compute 10th and 90th percentiles for clever vmin/vmax (contrast)
-        vmin = float(np.percentile(img, MIN_PERCENTILE))
-        vmax = float(np.percentile(img, MAX_PERCENTILE))
+        vmin = np.percentile(img, MIN_PERCENTILE)
+        vmax = np.percentile(img, MAX_PERCENTILE)
         plt.figure()
         plt.imshow(img, cmap=COLORMAP, vmin=vmin, vmax=vmax)
         plt.title(tif_file.name)
