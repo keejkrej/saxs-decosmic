@@ -10,7 +10,7 @@ from xrd_decosmic.core.series_processor import SeriesProcessor, SeriesConfig
 # Parameters
 INPUT_FILE = "data/raw/first_image.tif"   # Path to the first image in the series
 OUTPUT_DIR = "data/processed"             # Output directory
-OUTPUT_PREFIX = "popc"                    # Output file prefix
+OUTPUT_PREFIX = "test"                    # Output file prefix
 USER_MASK = None                          # Path to user mask file (optional)
 USE_FABIO = False                         # Use fabio for image loading
 
