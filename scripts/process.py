@@ -25,7 +25,7 @@ LOG_LEVEL = logging.INFO                  # Set to logging.DEBUG for verbose out
 
 # Logging setup
 logging.basicConfig(level=LOG_LEVEL, format='%(message)s')
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 # Input checks
 input_path = Path(INPUT_FILE).resolve()

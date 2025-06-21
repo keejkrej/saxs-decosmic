@@ -19,7 +19,7 @@ COLORMAP = 'inferno'
 
 # Logging setup
 logging.basicConfig(level=LOG_LEVEL, format='%(message)s')
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 output_path = Path(OUTPUT_DIR).resolve()
 logger.info(f"Looking for files in: {output_path} (prefix: {OUTPUT_PREFIX})")
