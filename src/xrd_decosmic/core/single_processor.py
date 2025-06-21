@@ -48,6 +48,7 @@ class SingleResult:
                     output_path / f'{prefix}_{key}.tif',
                     value
                 )
+        logger.info(f"Results saved to: {output_path} (prefix: {prefix})")
 
     def load(self, input_dir: str, prefix: str = '') -> None:
         """Load all result arrays from TIFF files in the specified directory."""
@@ -58,7 +59,8 @@ class SingleResult:
                 setattr(self, key, tifffile.imread(file_path))
             else:
                 raise FileNotFoundError(f"File {file_path} does not exist")
-
+        logger.info(f"Results loaded from: {input_path} (prefix: {prefix})")
+        
 # =====================================================================
 # Single Image Processor Class
 # =====================================================================
