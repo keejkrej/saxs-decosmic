@@ -15,8 +15,7 @@ dependencies = [
     "scipy==1.15.3",
     "tqdm==4.67.1",
     "tifffile==2025.5.10",
-    "pyfai==2025.3.0",
-    "pandas==2.3.0"
+    "pyfai==2025.3.0"
 ]
 requires-python = ">=3.12,<3.13"
 readme = "README.md"

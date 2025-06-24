@@ -1,0 +1,6 @@
+fabio
+numpy
+scipy
+tqdm
+tifffile
+pyfai
