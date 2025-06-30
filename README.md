@@ -11,7 +11,7 @@ git clone https://gitlab.physik.uni-muenchen.de/LDAP_ag-nickel/xrd-decosmic.git
 cd xrd-decosmic
 unset PIP_REQUIRE_VIRTUALENV
 pip install -r requirement.txt --no-user
-pip install . --no-user --no-deps
+pip install . --no-user --no-deps  --ignore-requires-python
 ```
 
 ## Usage
