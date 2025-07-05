@@ -11,9 +11,7 @@ import tifffile
 
 logger = logging.getLogger(__name__)
 
-# =====================================================================
 # Config and Result Dataclasses
-# =====================================================================
 
 @dataclass
 class SingleConfig:
@@ -61,17 +59,13 @@ class SingleResult:
                 raise FileNotFoundError(f"File {file_path} does not exist")
         logger.info(f"Results loaded from: {input_path} (prefix: {prefix})")
         
-# =====================================================================
 # Single Image Processor Class
-# =====================================================================
 
 class SingleProcessor:
     """Processes single images to remove high energy background using de-donut and de-streak algorithms."""
 
-    # =====================================================================
     # Initialization
-    # =====================================================================
-
+    
     def __init__(self,
                  img_orig: np.ndarray,
                  single_config: SingleConfig,
@@ -101,10 +95,8 @@ class SingleProcessor:
             logger.error(f"Failed to initialize SingleProcessor: {e}")
             raise
 
-    # =====================================================================
     # Private Methods
-    # =====================================================================
-
+    
     def _de_donut(self, img_orig: np.ndarray, mask_modifiable: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Remove donut-shaped features using threshold-based detection and morphological expansion."""
         try:
@@ -160,10 +152,8 @@ class SingleProcessor:
             logger.error(f"De-streak failed: {e}")
             raise
 
-    # =====================================================================
     # Public Methods
-    # =====================================================================
-
+    
     def clean_img(self) -> SingleResult:
         """Clean the image by sequentially removing donut-shaped and streak-shaped features."""
         try:

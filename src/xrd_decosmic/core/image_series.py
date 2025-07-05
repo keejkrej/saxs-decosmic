@@ -6,9 +6,7 @@ import os
 import numpy as np
 import tifffile
 
-# =====================================================================
 # Base Image Series Class
-# =====================================================================
 
 class BaseImageSeries(ABC):
     """Abstract base class defining the interface for image series loading implementations."""
@@ -29,9 +27,7 @@ class BaseImageSeries(ABC):
         """Clean up any resources held by the implementation."""
         pass
 
-# =====================================================================
 # Image Series Implementations
-# =====================================================================
 
 class ManualImageSeries(BaseImageSeries):
     """Implementation for loading images manually from directory by scanning for matching files."""
@@ -93,9 +89,7 @@ class FabioImageSeries(BaseImageSeries):
         if hasattr(self, 'img_series'):
             self.img_series.close()
 
-# =====================================================================
 # Main Image Series Class
-# =====================================================================
 
 class ImageSeries:
     """Factory class for creating appropriate image series implementations."""
