@@ -14,9 +14,7 @@ from .image_series import ImageSeries
 
 logger = logging.getLogger(__name__)
 
-# =====================================================================
 # Config and Result Dataclasses
-# =====================================================================
 
 @dataclass
 class SeriesConfig(SingleConfig):
@@ -62,17 +60,13 @@ class SeriesResult:
                 raise FileNotFoundError(f"File {file_path} does not exist")
         logger.info(f"Results loaded from: {input_path} (prefix: {prefix})")
 
-# =====================================================================
 # Series Processor Class
-# =====================================================================
 
 class SeriesProcessor:
     """Processes image series to remove high energy background with averaging algorithms and variance calculation."""
     
-    # =====================================================================
     # Initialization
-    # =====================================================================
-
+    
     def __init__(self,
                 first_filename: str,
                 series_config: SeriesConfig,
@@ -96,10 +90,8 @@ class SeriesProcessor:
             logger.error(f"Failed to initialize SeriesProcessor: {str(e)}")
             raise
 
-    # =====================================================================
     # Private Methods
-    # =====================================================================
-
+    
     def _load_images(self, first_filename: str, use_fabio: bool = False) -> None:
         """Load images from file series using the ImageSeries factory."""
         try:
@@ -274,10 +266,8 @@ class SeriesProcessor:
             logger.error(f"Clean-variance calculation failed: {str(e)}")
             raise
 
-    # =====================================================================
     # Public Methods
-    # =====================================================================
-
+    
     def process_series(self) -> SeriesResult:
         """Execute the complete series processing pipeline including averaging, masking and variance calculation."""
         try:
