@@ -1,11 +1,11 @@
 """
-Process a series of XRD images using the SeriesProcessor pipeline (script version).
+Process a series of SAXS images using the SeriesProcessor pipeline (script version).
 """
 
 import logging
 from pathlib import Path
 import fabio
-from xrd_decosmic.core.series_processor import SeriesProcessor, SeriesConfig
+from saxs_decosmic.core.series_processor import SeriesProcessor, SeriesConfig
 
 # Parameters
 INPUT_FILE = "data/raw/first_image.tif"   # Path to the first image in the series

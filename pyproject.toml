@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "xrd-decosmic"
+name = "saxs-decosmic"
 version = "1.2.0"
-description = "High energy background removal from XRD 2d image"
+description = "High energy background removal from SAXS 2d image"
 authors = [
     { name = "Tianyi Cao", email = "ctyjackcao@outlook.com" }
 ]
@@ -21,4 +21,4 @@ readme = "README.md"
 license = { text = "MIT" }
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/xrd_decosmic"]
+packages = ["src/saxs_decosmic"]

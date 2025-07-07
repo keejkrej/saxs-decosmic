@@ -1,5 +1,5 @@
 """
-Plot a series of processed XRD images as PNGs with percentile-based contrast.
+Plot a series of processed SAXS images as PNGs with percentile-based contrast.
 """
 
 import matplotlib.pyplot as plt

@@ -1,14 +1,14 @@
-# XRD Decosmic
+# SAXS Decosmic
 
-A tool for removing high energy background from XRD 2D images.
+A tool for removing high energy background from SAXS 2D images.
 
 ## Installation
 
 ```bash
-git clone https://github.com/keejkrej/xrd-decosmic.git
+git clone https://github.com/keejkrej/saxs-decosmic.git
 (or)
-git clone https://gitlab.physik.uni-muenchen.de/LDAP_ag-nickel/xrd-decosmic.git
-cd xrd-decosmic
+git clone https://gitlab.physik.uni-muenchen.de/LDAP_ag-nickel/saxs-decosmic.git
+cd saxs-decosmic
 unset PIP_REQUIRE_VIRTUALENV
 pip install -r requirement.txt --no-user
 pip install . --no-user --no-deps  --ignore-requires-python
