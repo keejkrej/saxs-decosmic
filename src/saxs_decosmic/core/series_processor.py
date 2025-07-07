@@ -68,12 +68,16 @@ class SeriesProcessor:
     # Initialization
     
     def __init__(self,
-                first_filename: str,
+                first_filename: str | Path,
                 series_config: SeriesConfig,
                 mask_modifiable: np.ndarray | None = None,
                 use_fabio: bool = False
                 ) -> None:
         """Initialize the processor with first filename, configuration, optional mask and fabio usage flag."""
+        assert isinstance(first_filename, (str, Path)), "first_filename must be string or pathlib.Path"
+        assert isinstance(series_config, SeriesConfig), "series_config must be SeriesConfig"
+        assert mask_modifiable is None or isinstance(mask_modifiable, np.ndarray), "mask_modifiable must be None or numpy array"
+        assert isinstance(use_fabio, bool), "use_fabio must be boolean"
         try:
             self.series_result = SeriesResult(
                 mask_modifiable=mask_modifiable
@@ -92,8 +96,10 @@ class SeriesProcessor:
 
     # Private Methods
     
-    def _load_images(self, first_filename: str, use_fabio: bool = False) -> None:
+    def _load_images(self, first_filename: str | Path, use_fabio: bool = False) -> None:
         """Load images from file series using the ImageSeries factory."""
+        assert isinstance(first_filename, (str, Path)), "first_filename must be string or pathlib.Path"
+        assert isinstance(use_fabio, bool), "use_fabio must be boolean"
         try:
             logger.info(f"Loading images from {first_filename} ...")
             
@@ -117,6 +123,8 @@ class SeriesProcessor:
 
     def _get_img(self, idx: int) -> np.ndarray:
         """Get a single preprocessed image from the series with outlier value handling."""
+        assert isinstance(idx, int), "index must be integer"
+        assert 0 <= idx < self.nframes, f"index {idx} out of range [0, {self.nframes})"
         try:
             img = self.img_series.get_frame(idx)
             img[img>10000] = 0 # Big values are set to 0
