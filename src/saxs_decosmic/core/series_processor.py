@@ -159,13 +159,12 @@ class SeriesProcessor:
     def _mask(self) -> None:
         """Create protection mask for ring features based on binary average threshold."""
         try:
-            if self.series_result.avg_binary is None:
-                raise ValueError("Binary average image not calculated")
+            assert self.series_result.avg_binary is not None, "Binary average image not calculated"
             
             self.series_result.mask_protect = self.series_result.avg_binary <= self.series_config.th_mask
             logger.debug(f"Number of pixels protected as ring features: {np.sum(1 - self.series_result.mask_protect)}")
 
-            if self.series_result.mask_modifiable is not None:
+            if self.series_result.mask_modifiable is not None and self.series_result.mask_modifiable.shape == self.series_result.mask_protect.shape:
                 self.series_result.mask_modifiable = self.series_result.mask_protect & self.series_result.mask_modifiable
             else:
                 self.series_result.mask_modifiable = self.series_result.mask_protect
@@ -178,8 +177,7 @@ class SeriesProcessor:
     def _avg_clean(self) -> None:
         """Process all images to remove high energy background and calculate cleaned averages."""
         try:
-            if self.series_result.mask_modifiable is None:
-                raise ValueError("Modifiable mask not calculated")
+            assert self.series_result.mask_modifiable is not None, "Modifiable mask not calculated"
             
             sum_half_clean = np.zeros(self.shape, dtype=np.float64)
             sum_clean = np.zeros(self.shape, dtype=np.float64)
@@ -198,18 +196,19 @@ class SeriesProcessor:
                 )
                 single_result = processor.clean_img()
                 
-                if single_result.img_half_clean is not None:
-                    sum_half_clean += single_result.img_half_clean
-                if single_result.img_clean is not None:
-                    sum_clean += single_result.img_clean
-                if single_result.sub_donut is not None:
-                    sum_donut += single_result.sub_donut
-                if single_result.sub_streak is not None:
-                    sum_streak += single_result.sub_streak
-                if single_result.mask_donut is not None:
-                    num_half_clean -= single_result.mask_donut.astype(np.int32)
-                if single_result.mask_combined is not None:
-                    num_clean -= single_result.mask_combined.astype(np.int32)
+                assert single_result.img_half_clean is not None, "img_half_clean must not be None"
+                assert single_result.img_clean is not None, "img_clean must not be None"
+                assert single_result.sub_donut is not None, "sub_donut must not be None"
+                assert single_result.sub_streak is not None, "sub_streak must not be None"
+                assert single_result.mask_donut is not None, "mask_donut must not be None"
+                assert single_result.mask_combined is not None, "mask_combined must not be None"
+
+                sum_half_clean += single_result.img_half_clean
+                sum_clean += single_result.img_clean
+                sum_donut += single_result.sub_donut
+                sum_streak += single_result.sub_streak
+                num_half_clean -= single_result.mask_donut.astype(np.int32)
+                num_clean -= single_result.mask_combined.astype(np.int32)
             
             self.series_result.avg_half_clean = np.divide(sum_half_clean, num_half_clean, out=np.zeros_like(sum_half_clean), where=num_half_clean != 0)
             self.series_result.avg_clean = np.divide(sum_clean, num_clean, out=np.zeros_like(sum_clean), where=num_clean != 0)
@@ -223,8 +222,7 @@ class SeriesProcessor:
     def _var_direct(self) -> None:
         """Calculate variance of direct average across all images."""
         try:
-            if self.series_result.avg_direct is None:
-                raise ValueError("Direct average not calculated")
+            assert self.series_result.avg_direct is not None, "Direct average not calculated"
             
             sum_variance = np.zeros(self.shape, dtype=np.float64)
             logger.info('Calculating direct variance ...')
@@ -243,8 +241,8 @@ class SeriesProcessor:
     def _var_clean(self) -> None:
         """Calculate variance of cleaned average across all processed images."""
         try:
-            if self.series_result.avg_clean is None or self.series_result.mask_modifiable is None:
-                raise ValueError("Clean average or modifiable mask not calculated")
+            assert self.series_result.avg_clean is not None, "Clean average not calculated"
+            assert self.series_result.mask_modifiable is not None, "Modifiable mask not calculated"
             
             sum_variance_half_clean = np.zeros(self.shape, dtype=np.float64)
             sum_variance_clean = np.zeros(self.shape, dtype=np.float64)
@@ -259,13 +257,15 @@ class SeriesProcessor:
                 )
                 single_result = processor.clean_img()
                 
-                if single_result.img_half_clean is not None and self.series_result.avg_half_clean is not None:
-                    diff_half_clean = single_result.img_half_clean - self.series_result.avg_half_clean
-                    sum_variance_half_clean += diff_half_clean ** 2
+                assert single_result.img_half_clean is not None, "img_half_clean must not be None"
+                assert self.series_result.avg_half_clean is not None, "avg_half_clean must not be None"
+                diff_half_clean = single_result.img_half_clean - self.series_result.avg_half_clean
+                sum_variance_half_clean += diff_half_clean ** 2
                 
-                if single_result.img_clean is not None and self.series_result.avg_clean is not None:
-                    diff_clean = single_result.img_clean - self.series_result.avg_clean
-                    sum_variance_clean += diff_clean ** 2
+                assert single_result.img_clean is not None, "img_clean must not be None"
+                assert self.series_result.avg_clean is not None, "avg_clean must not be None"
+                diff_clean = single_result.img_clean - self.series_result.avg_clean
+                sum_variance_clean += diff_clean ** 2
             
             self.series_result.var_half_clean = sum_variance_half_clean / self.nframes
             self.series_result.var_clean = sum_variance_clean / self.nframes
