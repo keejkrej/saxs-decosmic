@@ -32,8 +32,11 @@ class BaseImageSeries(ABC):
 class ManualImageSeries(BaseImageSeries):
     """Implementation for loading images manually from directory by scanning for matching files."""
     
-    def __init__(self, directory: str, extension: str = "*.tif") -> None:
+    def __init__(self, directory: str | Path, extension: str = "*.tif") -> None:
         """Initialize the image series implementation."""
+        assert isinstance(directory, (str, Path)), "directory must be string or Path"
+        assert isinstance(extension, str), "extension must be string"
+        assert extension.startswith('*.'), "extension should be in format '*.ext'"
         self.directory = Path(directory)
         self.extension = extension
         self._load_files()
@@ -52,6 +55,7 @@ class ManualImageSeries(BaseImageSeries):
     
     def get_frame(self, index: int) -> np.ndarray:
         """Get a frame at the specified index."""
+        assert isinstance(index, int), "index must be integer"
         if not 0 <= index < self.nframes:
             raise IndexError(f"Frame index {index} out of range [0, {self.nframes})")
         
@@ -66,6 +70,8 @@ class FabioImageSeries(BaseImageSeries):
     
     def __init__(self, first_filename: str) -> None:
         """Initialize the image series implementation."""
+        assert isinstance(first_filename, str), "first_filename must be string"
+        assert Path(first_filename).exists(), f"File {first_filename} does not exist"
         self.img_series = fabio.open_series(first_filename=first_filename)
     
     @property
@@ -95,8 +101,11 @@ class ImageSeries:
     """Factory class for creating appropriate image series implementations."""
     
     @classmethod
-    def create(cls, first_filename: str, use_fabio: bool = False) -> BaseImageSeries:
+    def create(cls, first_filename: str | Path, use_fabio: bool = False) -> BaseImageSeries:
         """Create a new image series implementation."""
+        assert isinstance(first_filename, (str, Path)), "first_filename must be string or Path"
+        assert Path(first_filename).exists(), f"File {first_filename} does not exist"
+        assert isinstance(use_fabio, bool), "use_fabio must be boolean"
         if use_fabio:
             return FabioImageSeries(first_filename)
         else:

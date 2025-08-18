@@ -69,17 +69,14 @@ class SingleProcessor:
     def __init__(self,
                  img_orig: np.ndarray,
                  single_config: SingleConfig,
-                 mask_modifiable: np.ndarray | None = None) -> None:
+                 mask_modifiable: np.ndarray | None = None
+                ) -> None:
         """Initialize the image processor with input image, configuration and optional mask."""
+        assert isinstance(img_orig, np.ndarray), "img_orig must be numpy array"
+        assert isinstance(single_config, SingleConfig), "single_config must be SingleConfig"
+        assert mask_modifiable is None or isinstance(mask_modifiable, np.ndarray), "mask_modifiable must be None or numpy array"
         try:
-            if not isinstance(img_orig, np.ndarray):
-                raise TypeError("Input image must be a numpy array")
-            if mask_modifiable is None:
-                mask_modifiable = np.ones(img_orig.shape, dtype=bool)
-            if not isinstance(mask_modifiable, np.ndarray):
-                raise TypeError("Input mask must be a numpy array")
-            if img_orig.shape != mask_modifiable.shape:
-                raise ValueError(f"Image shape {img_orig.shape} does not match mask shape {mask_modifiable.shape}")
+            assert img_orig.shape == mask_modifiable.shape, f"Image shape {img_orig.shape} does not match mask shape {mask_modifiable.shape}"
             
             self.single_result = SingleResult(
                 img_orig=img_orig,
@@ -99,13 +96,13 @@ class SingleProcessor:
     
     def _de_donut(self, img_orig: np.ndarray, mask_modifiable: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Remove donut-shaped features using threshold-based detection and morphological expansion."""
+        assert img_orig.dtype == self.dtype, f"Image dtype {img_orig.dtype} doesn't match expected {self.dtype}"
+        assert mask_modifiable.dtype == bool, "Mask must be boolean array"
         try:
-            if self.single_config is None:
-                raise ValueError("Configuration is not set")
-            if not isinstance(img_orig, np.ndarray) or not isinstance(mask_modifiable, np.ndarray):
-                raise TypeError("Input image and mask must be numpy arrays")
-            if img_orig.shape != mask_modifiable.shape:
-                raise ValueError(f"Image shape {img_orig.shape} does not match mask shape {mask_modifiable.shape}")
+            assert self.single_config is not None, "Configuration is not set"
+            assert isinstance(img_orig, np.ndarray) and isinstance(mask_modifiable, np.ndarray), "Input image and mask must be numpy arrays"
+            
+            assert img_orig.shape == mask_modifiable.shape, f"Image shape {img_orig.shape} does not match mask shape {mask_modifiable.shape}"
             
             logger.debug(f"Starting de-donut with threshold: {self.single_config.th_donut}")
 
@@ -124,13 +121,13 @@ class SingleProcessor:
     
     def _de_streak(self, img_orig: np.ndarray, mask_modifiable: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Remove streak-shaped features using convolution-based detection and morphological expansion."""
+        assert img_orig.dtype == self.dtype, f"Image dtype {img_orig.dtype} doesn't match expected {self.dtype}"
+        assert mask_modifiable.dtype == bool, "Mask must be boolean array"
         try:
-            if self.single_config is None:
-                raise ValueError("Configuration is not set")
-            if not isinstance(img_orig, np.ndarray) or not isinstance(mask_modifiable, np.ndarray):
-                raise TypeError("Input image and mask must be numpy arrays")
-            if img_orig.shape != mask_modifiable.shape:
-                raise ValueError(f"Image shape {img_orig.shape} does not match mask shape {mask_modifiable.shape}")
+            assert self.single_config is not None, "Configuration is not set"
+            assert isinstance(img_orig, np.ndarray) and isinstance(mask_modifiable, np.ndarray), "Input image and mask must be numpy arrays"
+            
+            assert img_orig.shape == mask_modifiable.shape, f"Image shape {img_orig.shape} does not match mask shape {mask_modifiable.shape}"
             
             logger.debug(f"Starting de-streak with threshold: {self.single_config.th_streak} and window size: {self.single_config.win_streak}")
 
@@ -156,10 +153,9 @@ class SingleProcessor:
     
     def clean_img(self) -> SingleResult:
         """Clean the image by sequentially removing donut-shaped and streak-shaped features."""
+        assert self.single_result.img_orig is not None, "Original image not set"
+        assert self.single_result.mask_modifiable is not None, "Modifiable mask not set"
         try:
-            if self.single_result.img_orig is None or self.single_result.mask_modifiable is None:
-                raise ValueError("Image and mask must be set before cleaning")
-            
             logger.debug("Starting image cleaning process")
 
             self.single_result.img_half_clean, self.single_result.mask_donut = self._de_donut(self.single_result.img_orig, self.single_result.mask_modifiable)

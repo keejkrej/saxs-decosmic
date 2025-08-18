@@ -36,18 +36,26 @@ class SeriesResult:
     var_half_clean: np.ndarray | None = None
     var_clean: np.ndarray | None = None
 
-    def save(self, output_dir: str, prefix: str = '') -> None:
+    def save(self, output_dir: str, prefix: str = '', avg_clean_only: bool = True) -> None:
         """Save all result arrays as TIFF files in the specified directory."""
         output_path = Path(output_dir).resolve()
         output_path.mkdir(parents=True, exist_ok=True)
         
-        for key, value in self.__dict__.items():
-            if value is not None:
+        if avg_clean_only:
+            if self.avg_clean is not None:
                 tifffile.imwrite(
-                    output_path / f'{prefix}_{key}.tif',
-                    value
+                    output_path / f'{prefix}_avg_clean.tif',
+                    self.avg_clean
                 )
-        logger.info(f"Results saved to: {output_path} (prefix: {prefix})")
+            logger.info(f"avg_clean saved to: {output_path} (prefix: {prefix})")
+        else:
+            for key, value in self.__dict__.items():
+                if value is not None:
+                    tifffile.imwrite(
+                        output_path / f'{prefix}_{key}.tif',
+                        value
+                    )
+            logger.info(f"Results saved to: {output_path} (prefix: {prefix})")
 
     def load(self, input_dir: str, prefix: str = '') -> None:
         """Load all result arrays from TIFF files in the specified directory."""
@@ -68,12 +76,16 @@ class SeriesProcessor:
     # Initialization
     
     def __init__(self,
-                first_filename: str,
+                first_filename: str | Path,
                 series_config: SeriesConfig,
                 mask_modifiable: np.ndarray | None = None,
                 use_fabio: bool = False
                 ) -> None:
         """Initialize the processor with first filename, configuration, optional mask and fabio usage flag."""
+        assert isinstance(first_filename, (str, Path)), "first_filename must be string or pathlib.Path"
+        assert isinstance(series_config, SeriesConfig), "series_config must be SeriesConfig"
+        assert mask_modifiable is None or isinstance(mask_modifiable, np.ndarray), "mask_modifiable must be None or numpy array"
+        assert isinstance(use_fabio, bool), "use_fabio must be boolean"
         try:
             self.series_result = SeriesResult(
                 mask_modifiable=mask_modifiable
@@ -92,8 +104,10 @@ class SeriesProcessor:
 
     # Private Methods
     
-    def _load_images(self, first_filename: str, use_fabio: bool = False) -> None:
+    def _load_images(self, first_filename: str | Path, use_fabio: bool = False) -> None:
         """Load images from file series using the ImageSeries factory."""
+        assert isinstance(first_filename, (str, Path)), "first_filename must be string or pathlib.Path"
+        assert isinstance(use_fabio, bool), "use_fabio must be boolean"
         try:
             logger.info(f"Loading images from {first_filename} ...")
             
@@ -117,6 +131,8 @@ class SeriesProcessor:
 
     def _get_img(self, idx: int) -> np.ndarray:
         """Get a single preprocessed image from the series with outlier value handling."""
+        assert isinstance(idx, int), "index must be integer"
+        assert 0 <= idx < self.nframes, f"index {idx} out of range [0, {self.nframes})"
         try:
             img = self.img_series.get_frame(idx)
             img[img>10000] = 0 # Big values are set to 0
@@ -151,13 +167,12 @@ class SeriesProcessor:
     def _mask(self) -> None:
         """Create protection mask for ring features based on binary average threshold."""
         try:
-            if self.series_result.avg_binary is None:
-                raise ValueError("Binary average image not calculated")
+            assert self.series_result.avg_binary is not None, "Binary average image not calculated"
             
             self.series_result.mask_protect = self.series_result.avg_binary <= self.series_config.th_mask
             logger.debug(f"Number of pixels protected as ring features: {np.sum(1 - self.series_result.mask_protect)}")
 
-            if self.series_result.mask_modifiable is not None:
+            if self.series_result.mask_modifiable is not None and self.series_result.mask_modifiable.shape == self.series_result.mask_protect.shape:
                 self.series_result.mask_modifiable = self.series_result.mask_protect & self.series_result.mask_modifiable
             else:
                 self.series_result.mask_modifiable = self.series_result.mask_protect
@@ -170,8 +185,7 @@ class SeriesProcessor:
     def _avg_clean(self) -> None:
         """Process all images to remove high energy background and calculate cleaned averages."""
         try:
-            if self.series_result.mask_modifiable is None:
-                raise ValueError("Modifiable mask not calculated")
+            assert self.series_result.mask_modifiable is not None, "Modifiable mask not calculated"
             
             sum_half_clean = np.zeros(self.shape, dtype=np.float64)
             sum_clean = np.zeros(self.shape, dtype=np.float64)
@@ -190,18 +204,19 @@ class SeriesProcessor:
                 )
                 single_result = processor.clean_img()
                 
-                if single_result.img_half_clean is not None:
-                    sum_half_clean += single_result.img_half_clean
-                if single_result.img_clean is not None:
-                    sum_clean += single_result.img_clean
-                if single_result.sub_donut is not None:
-                    sum_donut += single_result.sub_donut
-                if single_result.sub_streak is not None:
-                    sum_streak += single_result.sub_streak
-                if single_result.mask_donut is not None:
-                    num_half_clean -= single_result.mask_donut.astype(np.int32)
-                if single_result.mask_combined is not None:
-                    num_clean -= single_result.mask_combined.astype(np.int32)
+                assert single_result.img_half_clean is not None, "img_half_clean must not be None"
+                assert single_result.img_clean is not None, "img_clean must not be None"
+                assert single_result.sub_donut is not None, "sub_donut must not be None"
+                assert single_result.sub_streak is not None, "sub_streak must not be None"
+                assert single_result.mask_donut is not None, "mask_donut must not be None"
+                assert single_result.mask_combined is not None, "mask_combined must not be None"
+
+                sum_half_clean += single_result.img_half_clean
+                sum_clean += single_result.img_clean
+                sum_donut += single_result.sub_donut
+                sum_streak += single_result.sub_streak
+                num_half_clean -= single_result.mask_donut.astype(np.int32)
+                num_clean -= single_result.mask_combined.astype(np.int32)
             
             self.series_result.avg_half_clean = np.divide(sum_half_clean, num_half_clean, out=np.zeros_like(sum_half_clean), where=num_half_clean != 0)
             self.series_result.avg_clean = np.divide(sum_clean, num_clean, out=np.zeros_like(sum_clean), where=num_clean != 0)
@@ -215,8 +230,7 @@ class SeriesProcessor:
     def _var_direct(self) -> None:
         """Calculate variance of direct average across all images."""
         try:
-            if self.series_result.avg_direct is None:
-                raise ValueError("Direct average not calculated")
+            assert self.series_result.avg_direct is not None, "Direct average not calculated"
             
             sum_variance = np.zeros(self.shape, dtype=np.float64)
             logger.info('Calculating direct variance ...')
@@ -235,8 +249,8 @@ class SeriesProcessor:
     def _var_clean(self) -> None:
         """Calculate variance of cleaned average across all processed images."""
         try:
-            if self.series_result.avg_clean is None or self.series_result.mask_modifiable is None:
-                raise ValueError("Clean average or modifiable mask not calculated")
+            assert self.series_result.avg_clean is not None, "Clean average not calculated"
+            assert self.series_result.mask_modifiable is not None, "Modifiable mask not calculated"
             
             sum_variance_half_clean = np.zeros(self.shape, dtype=np.float64)
             sum_variance_clean = np.zeros(self.shape, dtype=np.float64)
@@ -251,13 +265,15 @@ class SeriesProcessor:
                 )
                 single_result = processor.clean_img()
                 
-                if single_result.img_half_clean is not None and self.series_result.avg_half_clean is not None:
-                    diff_half_clean = single_result.img_half_clean - self.series_result.avg_half_clean
-                    sum_variance_half_clean += diff_half_clean ** 2
+                assert single_result.img_half_clean is not None, "img_half_clean must not be None"
+                assert self.series_result.avg_half_clean is not None, "avg_half_clean must not be None"
+                diff_half_clean = single_result.img_half_clean - self.series_result.avg_half_clean
+                sum_variance_half_clean += diff_half_clean ** 2
                 
-                if single_result.img_clean is not None and self.series_result.avg_clean is not None:
-                    diff_clean = single_result.img_clean - self.series_result.avg_clean
-                    sum_variance_clean += diff_clean ** 2
+                assert single_result.img_clean is not None, "img_clean must not be None"
+                assert self.series_result.avg_clean is not None, "avg_clean must not be None"
+                diff_clean = single_result.img_clean - self.series_result.avg_clean
+                sum_variance_clean += diff_clean ** 2
             
             self.series_result.var_half_clean = sum_variance_half_clean / self.nframes
             self.series_result.var_clean = sum_variance_clean / self.nframes
