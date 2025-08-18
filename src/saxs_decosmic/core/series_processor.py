@@ -36,18 +36,26 @@ class SeriesResult:
     var_half_clean: np.ndarray | None = None
     var_clean: np.ndarray | None = None
 
-    def save(self, output_dir: str, prefix: str = '') -> None:
+    def save(self, output_dir: str, prefix: str = '', avg_clean_only: bool = True) -> None:
         """Save all result arrays as TIFF files in the specified directory."""
         output_path = Path(output_dir).resolve()
         output_path.mkdir(parents=True, exist_ok=True)
         
-        for key, value in self.__dict__.items():
-            if value is not None:
+        if avg_clean_only:
+            if self.avg_clean is not None:
                 tifffile.imwrite(
-                    output_path / f'{prefix}_{key}.tif',
-                    value
+                    output_path / f'{prefix}_avg_clean.tif',
+                    self.avg_clean
                 )
-        logger.info(f"Results saved to: {output_path} (prefix: {prefix})")
+            logger.info(f"avg_clean saved to: {output_path} (prefix: {prefix})")
+        else:
+            for key, value in self.__dict__.items():
+                if value is not None:
+                    tifffile.imwrite(
+                        output_path / f'{prefix}_{key}.tif',
+                        value
+                    )
+            logger.info(f"Results saved to: {output_path} (prefix: {prefix})")
 
     def load(self, input_dir: str, prefix: str = '') -> None:
         """Load all result arrays from TIFF files in the specified directory."""
