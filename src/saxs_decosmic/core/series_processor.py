@@ -284,7 +284,7 @@ class SeriesProcessor:
 
     # Public Methods
     
-    def process_series(self) -> SeriesResult:
+    def process_series(self, skip_variance: bool = True) -> SeriesResult:
         """Execute the complete series processing pipeline including averaging, masking and variance calculation."""
         try:
             logger.info("Starting series processing pipeline")
@@ -298,9 +298,12 @@ class SeriesProcessor:
             # Step 3: Calculate clean average  
             self._avg_clean()
 
-            # Step 4: Calculate variances
-            self._var_direct()
-            self._var_clean()
+            # Step 4: Calculate variances (optional)
+            if not skip_variance:
+                self._var_direct()
+                self._var_clean()
+            else:
+                logger.info("Skipping variance calculations")
 
             logger.info("Series processing pipeline completed successfully")
             return deepcopy(self.series_result)

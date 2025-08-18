@@ -14,6 +14,7 @@ OUTPUT_PREFIX = "test"                    # Output file prefix
 USER_MASK = None                          # Path to user mask file (optional)
 USE_FABIO = False                         # Use fabio for image loading
 AVG_CLEAN_ONLY = True                    # Save only avg_clean result
+SKIP_VARIANCE = True                      # Skip variance calculations
 
 TH_DONUT = 15
 TH_MASK = 0.05
@@ -66,7 +67,7 @@ processor = SeriesProcessor(
 
 # Run processing pipeline
 logger.info("Processing image series...")
-series_result = processor.process_series()
+series_result = processor.process_series(skip_variance=SKIP_VARIANCE)
 
 # Save results
 logger.info(f"Saving results to: {output_path} (prefix: {OUTPUT_PREFIX})")
