@@ -76,12 +76,11 @@ class SingleProcessor:
         assert isinstance(single_config, SingleConfig), "single_config must be SingleConfig"
         assert mask_modifiable is None or isinstance(mask_modifiable, np.ndarray), "mask_modifiable must be None or numpy array"
         try:
-            assert img_orig.shape == mask_modifiable.shape, f"Image shape {img_orig.shape} does not match mask shape {mask_modifiable.shape}"
+            if mask_modifiable is not None:
+                assert img_orig.shape == mask_modifiable.shape, f"Image shape {img_orig.shape} does not match mask shape {mask_modifiable.shape}"
             
-            self.single_result = SingleResult(
-                img_orig=img_orig,
-                mask_modifiable=mask_modifiable,
-            )
+            self.img_orig = img_orig
+            self.mask_modifiable = mask_modifiable
             self.single_config = single_config
             self.shape = img_orig.shape
             self.dtype = img_orig.dtype
@@ -153,20 +152,30 @@ class SingleProcessor:
     
     def clean_img(self) -> SingleResult:
         """Clean the image by sequentially removing donut-shaped and streak-shaped features."""
-        assert self.single_result.img_orig is not None, "Original image not set"
-        assert self.single_result.mask_modifiable is not None, "Modifiable mask not set"
+        assert self.img_orig is not None, "Original image not set"
+        assert self.mask_modifiable is not None, "Modifiable mask not set"
         try:
             logger.debug("Starting image cleaning process")
 
-            self.single_result.img_half_clean, self.single_result.mask_donut = self._de_donut(self.single_result.img_orig, self.single_result.mask_modifiable)
-            self.single_result.img_clean, self.single_result.mask_streak = self._de_streak(self.single_result.img_half_clean, self.single_result.mask_modifiable)
+            img_half_clean, mask_donut = self._de_donut(self.img_orig, self.mask_modifiable)
+            img_clean, mask_streak = self._de_streak(img_half_clean, self.mask_modifiable)
             
-            self.single_result.mask_combined = self.single_result.mask_donut | self.single_result.mask_streak
-            self.single_result.sub_donut = self.single_result.img_orig - self.single_result.img_half_clean
-            self.single_result.sub_streak = self.single_result.img_half_clean - self.single_result.img_clean
+            mask_combined = mask_donut | mask_streak
+            sub_donut = self.img_orig - img_half_clean
+            sub_streak = img_half_clean - img_clean
             
             logger.debug("Image cleaning process completed successfully")
-            return deepcopy(self.single_result)
+            return SingleResult(
+                img_orig=deepcopy(self.img_orig),
+                img_half_clean=img_half_clean,
+                img_clean=img_clean,
+                mask_modifiable=deepcopy(self.mask_modifiable),
+                mask_donut=mask_donut,
+                mask_streak=mask_streak,
+                mask_combined=mask_combined,
+                sub_donut=sub_donut,
+                sub_streak=sub_streak
+            )
         except Exception as e:
             logger.error(f"Image cleaning failed: {e}")
             raise

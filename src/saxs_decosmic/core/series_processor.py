@@ -70,6 +70,10 @@ class SeriesResult:
 
 # Series Processor Class
 
+from typing import Tuple
+
+# Series Processor Class
+
 class SeriesProcessor:
     """Processes image series to remove high energy background with averaging algorithms and variance calculation."""
     
@@ -87,9 +91,7 @@ class SeriesProcessor:
         assert mask_modifiable is None or isinstance(mask_modifiable, np.ndarray), "mask_modifiable must be None or numpy array"
         assert isinstance(use_fabio, bool), "use_fabio must be boolean"
         try:
-            self.series_result = SeriesResult(
-                mask_modifiable=mask_modifiable
-            )
+            self.mask_modifiable = mask_modifiable
             self.series_config = series_config
             self.first_filename = str(Path(first_filename).resolve())
             if not os.path.isfile(self.first_filename):
@@ -101,6 +103,13 @@ class SeriesProcessor:
         except Exception as e:
             logger.error(f"Failed to initialize SeriesProcessor: {str(e)}")
             raise
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.img_series.cleanup()
+        logger.debug("SeriesProcessor resources cleaned up")
 
     # Private Methods
     
@@ -143,7 +152,7 @@ class SeriesProcessor:
             logger.error(f"Failed to get image at index {idx}: {str(e)}")
             raise
     
-    def _avg_direct(self) -> None:
+    def _avg_direct(self) -> Tuple[np.ndarray, np.ndarray]:
         """Calculate direct average of all images and their binary representations."""
         try:
             sum_direct = np.zeros(self.shape, dtype=np.float64)
@@ -157,35 +166,35 @@ class SeriesProcessor:
                 img_binary = (img > 0).astype(self.dtype)
                 sum_binary += img_binary
             
-            self.series_result.avg_direct = sum_direct / self.nframes
-            self.series_result.avg_binary = sum_binary / self.nframes
+            avg_direct = sum_direct / self.nframes
+            avg_binary = sum_binary / self.nframes
             logger.debug("Direct-average finished")
+            return avg_direct, avg_binary
         except Exception as e:
             logger.error(f"Direct-average failed: {str(e)}")
             raise
 
-    def _mask(self) -> None:
+    def _mask(self, avg_binary: np.ndarray, mask_modifiable_orig: np.ndarray | None) -> Tuple[np.ndarray, np.ndarray]:
         """Create protection mask for ring features based on binary average threshold."""
         try:
-            assert self.series_result.avg_binary is not None, "Binary average image not calculated"
-            
-            self.series_result.mask_protect = self.series_result.avg_binary <= self.series_config.th_mask
-            logger.debug(f"Number of pixels protected as ring features: {np.sum(1 - self.series_result.mask_protect)}")
+            mask_protect = avg_binary <= self.series_config.th_mask
+            logger.debug(f"Number of pixels protected as ring features: {np.sum(1 - mask_protect)}")
 
-            if self.series_result.mask_modifiable is not None and self.series_result.mask_modifiable.shape == self.series_result.mask_protect.shape:
-                self.series_result.mask_modifiable = self.series_result.mask_protect & self.series_result.mask_modifiable
+            if mask_modifiable_orig is not None and mask_modifiable_orig.shape == mask_protect.shape:
+                mask_modifiable = mask_protect & mask_modifiable_orig
             else:
-                self.series_result.mask_modifiable = self.series_result.mask_protect
+                mask_modifiable = mask_protect
 
             logger.debug("Combined mask created")
+            return mask_protect, mask_modifiable
         except Exception as e:
             logger.error(f"Failed to create mask: {str(e)}")
             raise
 
-    def _avg_clean(self) -> None:
+    def _avg_clean(self, mask_modifiable: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Process all images to remove high energy background and calculate cleaned averages."""
         try:
-            assert self.series_result.mask_modifiable is not None, "Modifiable mask not calculated"
+            assert mask_modifiable is not None, "Modifiable mask not calculated"
             
             sum_half_clean = np.zeros(self.shape, dtype=np.float64)
             sum_clean = np.zeros(self.shape, dtype=np.float64)
@@ -200,7 +209,7 @@ class SeriesProcessor:
                 processor = SingleProcessor(
                     img,
                     self.series_config,
-                    self.series_result.mask_modifiable
+                    mask_modifiable
                 )
                 single_result = processor.clean_img()
                 
@@ -218,39 +227,41 @@ class SeriesProcessor:
                 num_half_clean -= single_result.mask_donut.astype(np.int32)
                 num_clean -= single_result.mask_combined.astype(np.int32)
             
-            self.series_result.avg_half_clean = np.divide(sum_half_clean, num_half_clean, out=np.zeros_like(sum_half_clean), where=num_half_clean != 0)
-            self.series_result.avg_clean = np.divide(sum_clean, num_clean, out=np.zeros_like(sum_clean), where=num_clean != 0)
-            self.series_result.avg_donut = sum_donut / self.nframes
-            self.series_result.avg_streak = sum_streak / self.nframes
+            avg_half_clean = np.divide(sum_half_clean, num_half_clean, out=np.zeros_like(sum_half_clean), where=num_half_clean != 0)
+            avg_clean = np.divide(sum_clean, num_clean, out=np.zeros_like(sum_clean), where=num_clean != 0)
+            avg_donut = sum_donut / self.nframes
+            avg_streak = sum_streak / self.nframes
             logger.debug("Clean-average finished")
+            return avg_half_clean, avg_clean, avg_donut, avg_streak
         except Exception as e:
             logger.error(f"Clean-average failed: {str(e)}")
             raise
 
-    def _var_direct(self) -> None:
+    def _var_direct(self, avg_direct: np.ndarray) -> np.ndarray:
         """Calculate variance of direct average across all images."""
         try:
-            assert self.series_result.avg_direct is not None, "Direct average not calculated"
+            assert avg_direct is not None, "Direct average not calculated"
             
             sum_variance = np.zeros(self.shape, dtype=np.float64)
             logger.info('Calculating direct variance ...')
             
             for i in tqdm(range(self.nframes), desc='Calculating direct variance'):
                 img = self._get_img(i)
-                diff = img - self.series_result.avg_direct
+                diff = img - avg_direct
                 sum_variance += diff ** 2
             
-            self.series_result.var_direct = sum_variance / self.nframes
+            var_direct = sum_variance / self.nframes
             logger.debug("Direct-variance calculated")
+            return var_direct
         except Exception as e:
             logger.error(f"Direct-variance calculation failed: {str(e)}")
             raise
 
-    def _var_clean(self) -> None:
+    def _var_clean(self, avg_half_clean: np.ndarray, avg_clean: np.ndarray, mask_modifiable: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Calculate variance of cleaned average across all processed images."""
         try:
-            assert self.series_result.avg_clean is not None, "Clean average not calculated"
-            assert self.series_result.mask_modifiable is not None, "Modifiable mask not calculated"
+            assert avg_clean is not None, "Clean average not calculated"
+            assert mask_modifiable is not None, "Modifiable mask not calculated"
             
             sum_variance_half_clean = np.zeros(self.shape, dtype=np.float64)
             sum_variance_clean = np.zeros(self.shape, dtype=np.float64)
@@ -261,23 +272,24 @@ class SeriesProcessor:
                 processor = SingleProcessor(
                     img,
                     self.series_config,
-                    self.series_result.mask_modifiable
+                    mask_modifiable
                 )
                 single_result = processor.clean_img()
                 
                 assert single_result.img_half_clean is not None, "img_half_clean must not be None"
-                assert self.series_result.avg_half_clean is not None, "avg_half_clean must not be None"
-                diff_half_clean = single_result.img_half_clean - self.series_result.avg_half_clean
+                assert avg_half_clean is not None, "avg_half_clean must not be None"
+                diff_half_clean = single_result.img_half_clean - avg_half_clean
                 sum_variance_half_clean += diff_half_clean ** 2
                 
                 assert single_result.img_clean is not None, "img_clean must not be None"
-                assert self.series_result.avg_clean is not None, "avg_clean must not be None"
-                diff_clean = single_result.img_clean - self.series_result.avg_clean
+                assert avg_clean is not None, "avg_clean must not be None"
+                diff_clean = single_result.img_clean - avg_clean
                 sum_variance_clean += diff_clean ** 2
             
-            self.series_result.var_half_clean = sum_variance_half_clean / self.nframes
-            self.series_result.var_clean = sum_variance_clean / self.nframes
+            var_half_clean = sum_variance_half_clean / self.nframes
+            var_clean = sum_variance_clean / self.nframes
             logger.debug("Clean-variance calculated")
+            return var_half_clean, var_clean
         except Exception as e:
             logger.error(f"Clean-variance calculation failed: {str(e)}")
             raise
@@ -290,33 +302,38 @@ class SeriesProcessor:
             logger.info("Starting series processing pipeline")
 
             # Step 1: Calculate direct average and binary average
-            self._avg_direct()
+            avg_direct, avg_binary = self._avg_direct()
 
             # Step 2: Create protection mask
-            self._mask()
+            mask_protect, mask_modifiable = self._mask(avg_binary, self.mask_modifiable)
 
             # Step 3: Calculate clean average  
-            self._avg_clean()
+            avg_half_clean, avg_clean, avg_donut, avg_streak = self._avg_clean(mask_modifiable)
 
             # Step 4: Calculate variances (optional)
+            var_direct = None
+            var_half_clean = None
+            var_clean = None
             if not skip_variance:
-                self._var_direct()
-                self._var_clean()
+                var_direct = self._var_direct(avg_direct)
+                var_half_clean, var_clean = self._var_clean(avg_half_clean, avg_clean, mask_modifiable)
             else:
                 logger.info("Skipping variance calculations")
 
             logger.info("Series processing pipeline completed successfully")
-            return deepcopy(self.series_result)
+            return SeriesResult(
+                avg_direct=avg_direct,
+                avg_binary=avg_binary,
+                mask_protect=mask_protect,
+                mask_modifiable=mask_modifiable,
+                avg_clean=avg_clean,
+                avg_half_clean=avg_half_clean,
+                avg_donut=avg_donut,
+                avg_streak=avg_streak,
+                var_direct=var_direct,
+                var_half_clean=var_half_clean,
+                var_clean=var_clean
+            )
         except Exception as e:
             logger.error(f"Series processing pipeline failed: {str(e)}")
             raise
-
-    def cleanup(self) -> None:
-        """Clean up image series resources when the processor is deleted."""
-        if hasattr(self, 'img_series'):
-            self.img_series.cleanup()
-            logger.debug("SeriesProcessor resources cleaned up")
-
-    def __del__(self):
-        """Automatically clean up resources when the processor is deleted."""
-        self.cleanup()

@@ -56,20 +56,20 @@ series_config = SeriesConfig(
     exp_streak=EXP_STREAK
 )
 
-# Initialize processor
+# Initialize processor and run processing pipeline
 logger.info(f"Initializing processor with input file: {input_path}")
-processor = SeriesProcessor(
+with SeriesProcessor(
     str(input_path),
     series_config,
     user_mask,
     USE_FABIO
-)
+) as processor:
+    # Run processing pipeline
+    logger.info("Processing image series...")
+    series_result = processor.process_series(skip_variance=SKIP_VARIANCE)
 
-# Run processing pipeline
-logger.info("Processing image series...")
-series_result = processor.process_series(skip_variance=SKIP_VARIANCE)
+    # Save results
+    logger.info(f"Saving results to: {output_path} (prefix: {OUTPUT_PREFIX})")
+    series_result.save(str(output_path), OUTPUT_PREFIX, avg_clean_only=AVG_CLEAN_ONLY)
 
-# Save results
-logger.info(f"Saving results to: {output_path} (prefix: {OUTPUT_PREFIX})")
-series_result.save(str(output_path), OUTPUT_PREFIX, avg_clean_only=AVG_CLEAN_ONLY)
 logger.info("Processing complete.") 

@@ -4,19 +4,19 @@ build-backend = "hatchling.build"
 
 [project]
 name = "saxs-decosmic"
-version = "1.2.0"
+version = "1.4.0"
 description = "High energy background removal from SAXS 2d image"
 authors = [
     { name = "Tianyi Cao", email = "ctyjackcao@outlook.com" }
 ]
 dependencies = [
-    "fabio==2024.9.0",
-    "numpy==2.2.6",
-    "scipy==1.15.3",
-    "tqdm==4.67.1",
-    "tifffile==2025.5.10",
+    "fabio",
+    "numpy",
+    "scipy",
+    "tqdm",
+    "tifffile",
 ]
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.11"
 readme = "README.md"
 license = { text = "MIT" }
 
