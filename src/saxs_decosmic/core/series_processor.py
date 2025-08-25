@@ -170,11 +170,11 @@ class SeriesProcessor:
                 img_binary = (img > 0).astype(self.dtype)
                 sum_binary += img_binary
             
-            # calculate average
+            # Calculate average
             avg_direct = sum_direct / self.nframes
             avg_binary = sum_binary / self.nframes
 
-            # calculate variance
+            # Calculate variance
             var_direct = sum_direct_squared / self.nframes - avg_direct ** 2
 
             logger.debug("Direct-average finished")
@@ -242,13 +242,13 @@ class SeriesProcessor:
                 sum_half_clean_squared += single_result.img_half_clean ** 2
                 sum_clean_squared += single_result.img_clean ** 2
 
-            # calculate average
+            # Calculate average
             avg_half_clean = np.divide(sum_half_clean, num_half_clean, out=np.zeros_like(sum_half_clean), where=num_half_clean != 0)
             avg_clean = np.divide(sum_clean, num_clean, out=np.zeros_like(sum_clean), where=num_clean != 0)
             avg_donut = sum_donut / self.nframes
             avg_streak = sum_streak / self.nframes
 
-            # calculate variance
+            # Calculate variance
             var_half_clean = np.divide(sum_half_clean_squared, num_half_clean, out=np.zeros_like(sum_half_clean_squared), where=num_half_clean != 0) - avg_half_clean ** 2
             var_clean = np.divide(sum_clean_squared, num_clean, out=np.zeros_like(sum_clean_squared), where=num_clean != 0) - avg_clean ** 2
 
@@ -265,13 +265,13 @@ class SeriesProcessor:
         try:
             logger.info("Starting series processing pipeline")
 
-            # calculate direct average and binary average
+            # Calculate direct average and binary average
             avg_direct, avg_binary, var_direct = self._avg_direct()
 
-            # create protection mask
+            # Create protection mask
             mask_protect, mask_modifiable = self._mask(avg_binary, self.mask_modifiable)
 
-            # calculate clean average
+            # Calculate clean average
             avg_half_clean, avg_clean, avg_donut, avg_streak, var_half_clean, var_clean = self._avg_clean(mask_modifiable)
 
             logger.info("Series processing pipeline completed successfully")
