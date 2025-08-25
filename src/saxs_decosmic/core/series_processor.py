@@ -160,7 +160,7 @@ class SeriesProcessor:
 
             sum_direct_squared = np.zeros(self.shape, dtype=np.float64)
 
-            logger.info('Direct averaging images ...')
+            logger.info('Direct-averaging images ...')
             
             for i in tqdm(range(self.nframes), desc='Direct-averaging images'):
                 img = self._get_img(i)
