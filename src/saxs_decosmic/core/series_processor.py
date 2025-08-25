@@ -157,19 +157,28 @@ class SeriesProcessor:
         try:
             sum_direct = np.zeros(self.shape, dtype=np.float64)
             sum_binary = np.zeros(self.shape, dtype=np.float64)
+
+            sum_direct_squared = np.zeros(self.shape, dtype=np.float64)
+
             logger.info('Direct averaging images ...')
             
             for i in tqdm(range(self.nframes), desc='Direct-averaging images'):
                 img = self._get_img(i)
                 sum_direct += img
+                sum_direct_squared += img ** 2
 
                 img_binary = (img > 0).astype(self.dtype)
                 sum_binary += img_binary
             
+            # calculate average
             avg_direct = sum_direct / self.nframes
             avg_binary = sum_binary / self.nframes
+
+            # calculate variance
+            var_direct = sum_direct_squared / self.nframes - avg_direct ** 2
+
             logger.debug("Direct-average finished")
-            return avg_direct, avg_binary
+            return avg_direct, avg_binary, var_direct
         except Exception as e:
             logger.error(f"Direct-average failed: {str(e)}")
             raise
@@ -202,7 +211,10 @@ class SeriesProcessor:
             sum_streak = np.zeros(self.shape, dtype=np.float64)
             num_half_clean = np.ones(self.shape, dtype=np.int32) * self.nframes
             num_clean = np.ones(self.shape, dtype=np.int32) * self.nframes
-            
+
+            sum_half_clean_squared = np.zeros(self.shape, dtype=np.float64)
+            sum_clean_squared = np.zeros(self.shape, dtype=np.float64)
+
             logger.info('Cleaning images ...')
             for i in tqdm(range(self.nframes), desc='Cleaning images'):
                 img = self._get_img(i)
@@ -226,99 +238,41 @@ class SeriesProcessor:
                 sum_streak += single_result.sub_streak
                 num_half_clean -= single_result.mask_donut.astype(np.int32)
                 num_clean -= single_result.mask_combined.astype(np.int32)
-            
+
+                sum_half_clean_squared += single_result.img_half_clean ** 2
+                sum_clean_squared += single_result.img_clean ** 2
+
+            # calculate average
             avg_half_clean = np.divide(sum_half_clean, num_half_clean, out=np.zeros_like(sum_half_clean), where=num_half_clean != 0)
             avg_clean = np.divide(sum_clean, num_clean, out=np.zeros_like(sum_clean), where=num_clean != 0)
             avg_donut = sum_donut / self.nframes
             avg_streak = sum_streak / self.nframes
+
+            # calculate variance
+            var_half_clean = np.divide(sum_half_clean_squared, num_half_clean, out=np.zeros_like(sum_half_clean_squared), where=num_half_clean != 0) - avg_half_clean ** 2
+            var_clean = np.divide(sum_clean_squared, num_clean, out=np.zeros_like(sum_clean_squared), where=num_clean != 0) - avg_clean ** 2
+
             logger.debug("Clean-average finished")
-            return avg_half_clean, avg_clean, avg_donut, avg_streak
+            return avg_half_clean, avg_clean, avg_donut, avg_streak, var_half_clean, var_clean
         except Exception as e:
             logger.error(f"Clean-average failed: {str(e)}")
             raise
 
-    def _var_direct(self, avg_direct: np.ndarray) -> np.ndarray:
-        """Calculate variance of direct average across all images."""
-        try:
-            assert avg_direct is not None, "Direct average not calculated"
-            
-            sum_variance = np.zeros(self.shape, dtype=np.float64)
-            logger.info('Calculating direct variance ...')
-            
-            for i in tqdm(range(self.nframes), desc='Calculating direct variance'):
-                img = self._get_img(i)
-                diff = img - avg_direct
-                sum_variance += diff ** 2
-            
-            var_direct = sum_variance / self.nframes
-            logger.debug("Direct-variance calculated")
-            return var_direct
-        except Exception as e:
-            logger.error(f"Direct-variance calculation failed: {str(e)}")
-            raise
-
-    def _var_clean(self, avg_half_clean: np.ndarray, avg_clean: np.ndarray, mask_modifiable: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Calculate variance of cleaned average across all processed images."""
-        try:
-            assert avg_clean is not None, "Clean average not calculated"
-            assert mask_modifiable is not None, "Modifiable mask not calculated"
-            
-            sum_variance_half_clean = np.zeros(self.shape, dtype=np.float64)
-            sum_variance_clean = np.zeros(self.shape, dtype=np.float64)
-            logger.info('Calculating clean variance ...')
-            
-            for i in tqdm(range(self.nframes), desc='Calculating clean variance'):
-                img = self._get_img(i)
-                processor = SingleProcessor(
-                    img,
-                    self.series_config,
-                    mask_modifiable
-                )
-                single_result = processor.clean_img()
-                
-                assert single_result.img_half_clean is not None, "img_half_clean must not be None"
-                assert avg_half_clean is not None, "avg_half_clean must not be None"
-                diff_half_clean = single_result.img_half_clean - avg_half_clean
-                sum_variance_half_clean += diff_half_clean ** 2
-                
-                assert single_result.img_clean is not None, "img_clean must not be None"
-                assert avg_clean is not None, "avg_clean must not be None"
-                diff_clean = single_result.img_clean - avg_clean
-                sum_variance_clean += diff_clean ** 2
-            
-            var_half_clean = sum_variance_half_clean / self.nframes
-            var_clean = sum_variance_clean / self.nframes
-            logger.debug("Clean-variance calculated")
-            return var_half_clean, var_clean
-        except Exception as e:
-            logger.error(f"Clean-variance calculation failed: {str(e)}")
-            raise
-
     # Public Methods
     
-    def process_series(self, skip_variance: bool = True) -> SeriesResult:
+    def process_series(self) -> SeriesResult:
         """Execute the complete series processing pipeline including averaging, masking and variance calculation."""
         try:
             logger.info("Starting series processing pipeline")
 
-            # Step 1: Calculate direct average and binary average
-            avg_direct, avg_binary = self._avg_direct()
+            # calculate direct average and binary average
+            avg_direct, avg_binary, var_direct = self._avg_direct()
 
-            # Step 2: Create protection mask
+            # create protection mask
             mask_protect, mask_modifiable = self._mask(avg_binary, self.mask_modifiable)
 
-            # Step 3: Calculate clean average  
-            avg_half_clean, avg_clean, avg_donut, avg_streak = self._avg_clean(mask_modifiable)
-
-            # Step 4: Calculate variances (optional)
-            var_direct = None
-            var_half_clean = None
-            var_clean = None
-            if not skip_variance:
-                var_direct = self._var_direct(avg_direct)
-                var_half_clean, var_clean = self._var_clean(avg_half_clean, avg_clean, mask_modifiable)
-            else:
-                logger.info("Skipping variance calculations")
+            # calculate clean average
+            avg_half_clean, avg_clean, avg_donut, avg_streak, var_half_clean, var_clean = self._avg_clean(mask_modifiable)
 
             logger.info("Series processing pipeline completed successfully")
             return SeriesResult(
